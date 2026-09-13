@@ -6,12 +6,26 @@ on:
       - master
 
 jobs:
-  migrate:
+  migrate-and-build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -22,3 +36,31 @@ jobs:
         run: supabase db push --project-ref ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Calculate build number
+        run: |
+          BUILD_NUMBER=$((300 + GITHUB_RUN_NUMBER))
+          echo "APP_BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+          echo "Build number: $BUILD_NUMBER"
+
+      - name: Create Production environment file
+        run: |
+          cat > .env.production <<EOF
+          EXPO_PUBLIC_APP_ENV=Prod
+          EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_PROD_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_PROD_PUBLISHABLE_KEY }}
+          EOF
+
+      - name: Build Production APK
+        run: pnpm build:apk:prod
+
+      - name: Rename APK
+        run: |
+          mv SL-Prod.apk "SL-Prod-build-${APP_BUILD_NUMBER}-v1.0.0.apk"
+
+      - name: Upload Production APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SL-Prod-build-${{ env.APP_BUILD_NUMBER }}-v1.0.0
+          path: SL-Prod-build-${{ env.APP_BUILD_NUMBER }}-v1.0.0.apk
+          retention-days: 30
