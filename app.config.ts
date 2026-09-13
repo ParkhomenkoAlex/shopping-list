@@ -2,14 +2,18 @@ import type { ExpoConfig } from 'expo/config';
 
 const appEnv = process.env.EXPO_PUBLIC_APP_ENV ?? 'Local';
 
-const versionCodes = {
+const defaultVersionCodes = {
   Local: 100,
   Dev: 200,
   Prod: 300,
 } as const;
 
-const versionCode =
-    versionCodes[appEnv as keyof typeof versionCodes] ?? 100;
+const defaultVersionCode =
+    defaultVersionCodes[appEnv as keyof typeof defaultVersionCodes] ?? 100;
+
+const versionCode = Number(
+    process.env.APP_BUILD_NUMBER ?? defaultVersionCode
+);
 
 const config: ExpoConfig = {
   name: `SL-${appEnv}`,
