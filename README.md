@@ -8,7 +8,14 @@ The project supports three completely separated environments:
 - **Development** — separate Supabase Cloud project
 - **Production** — separate Supabase Cloud project
 
-The three environments use different Android application IDs, so they can be installed and run independently on the same Android device.
+The environments use different Android application IDs, so the applications can be installed independently on the same Android device.
+
+The project also uses GitHub Actions to automatically:
+
+- apply Supabase migrations;
+- build Development APKs after changes reach `develop`;
+- build Production APKs after changes reach `master`;
+- generate unique Android build numbers.
 
 ---
 
@@ -35,28 +42,29 @@ The three environments use different Android application IDs, so they can be ins
 - [19. Development Environment](#19-development-environment)
 - [20. Production Environment](#20-production-environment)
 - [21. Expo Configuration](#21-expo-configuration)
-- [22. Local Supabase](#22-local-supabase)
-- [23. Supabase Cloud](#23-supabase-cloud)
-- [24. Supabase Values and Credentials](#24-supabase-values-and-credentials)
-- [25. Database Migrations](#25-database-migrations)
-- [26. Migration Development Workflow](#26-migration-development-workflow)
-- [27. Running the App on Android Emulator](#27-running-the-app-on-android-emulator)
-- [28. Running the App on a Physical Android Phone with Expo Go](#28-running-the-app-on-a-physical-android-phone-with-expo-go)
-- [29. Expo Go vs APK](#29-expo-go-vs-apk)
-- [30. Fast Refresh](#30-fast-refresh)
-- [31. Debugging](#31-debugging)
-- [32. Testing Supabase from the App](#32-testing-supabase-from-the-app)
-- [33. Building Standalone APKs](#33-building-standalone-apks)
-- [34. Installing APKs on a Physical Android Device](#34-installing-apks-on-a-physical-android-device)
-- [35. Git Workflow](#35-git-workflow)
-- [36. GitHub Actions](#36-github-actions)
-- [37. GitHub Secrets](#37-github-secrets)
-- [38. SourceTree](#38-sourcetree)
-- [39. Security](#39-security)
-- [40. Troubleshooting](#40-troubleshooting)
-- [41. Production Safety](#41-production-safety)
-- [42. First-Time Setup Checklist](#42-first-time-setup-checklist)
-- [43. Useful Commands](#43-useful-commands)
+- [22. Application Version and Build Number](#22-application-version-and-build-number)
+- [23. Local Supabase](#23-local-supabase)
+- [24. Supabase Cloud](#24-supabase-cloud)
+- [25. Supabase Values and Credentials](#25-supabase-values-and-credentials)
+- [26. Database Migrations](#26-database-migrations)
+- [27. Migration Development Workflow](#27-migration-development-workflow)
+- [28. Running the App on Android Emulator](#28-running-the-app-on-android-emulator)
+- [29. Running the App on a Physical Android Phone with Expo Go](#29-running-the-app-on-a-physical-android-phone-with-expo-go)
+- [30. Expo Go vs APK](#30-expo-go-vs-apk)
+- [31. Fast Refresh](#31-fast-refresh)
+- [32. Debugging](#32-debugging)
+- [33. Testing Supabase from the App](#33-testing-supabase-from-the-app)
+- [34. Building Standalone APKs](#34-building-standalone-apks)
+- [35. Installing APKs on a Physical Android Device](#35-installing-apks-on-a-physical-android-device)
+- [36. Git Workflow](#36-git-workflow)
+- [37. GitHub Actions](#37-github-actions)
+- [38. GitHub Secrets](#38-github-secrets)
+- [39. SourceTree](#39-sourcetree)
+- [40. Security](#40-security)
+- [41. Troubleshooting](#41-troubleshooting)
+- [42. Production Safety](#42-production-safety)
+- [43. First-Time Setup Checklist](#43-first-time-setup-checklist)
+- [44. Useful Commands](#44-useful-commands)
 
 ---
 
@@ -75,7 +83,9 @@ The application is designed around a simple CRUD workflow:
 
 The application does not use a predefined product catalog or predefined categories.
 
-The initial database contains a `lists` table. Additional tables, such as `list_items`, can be added later through migrations.
+The initial database contains a `lists` table.
+
+Additional tables, such as `list_items`, can be added later through Supabase migrations.
 
 ---
 
@@ -106,7 +116,7 @@ The project uses:
 
 # 3. Environment Architecture
 
-The project has three independent environments.
+The project has three completely separated environments.
 
 ```text
                          GitHub
@@ -120,21 +130,21 @@ The project has three independent environments.
        Supabase Cloud              Supabase Cloud
               ▲                           ▲
               │                           │
-       Shopping List Dev          Shopping List Prod
+          SL-Dev                      SL-Prod
 ```
 
 Local development is completely separate:
 
 ```text
-Shopping List Local
-        │
-        ▼
+SL-Local
+   │
+   ▼
 Local Supabase
-        │
-        ▼
+   │
+   ▼
 Docker
-        │
-        ▼
+   │
+   ▼
 Local PostgreSQL
 ```
 
@@ -142,11 +152,11 @@ Local PostgreSQL
 
 | Environment | App Name | Android Package | Database |
 |---|---|---|---|
-| Local | Shopping List Local | `com.anonymous.shoppinglist.local` | Local Supabase |
-| Development | Shopping List Dev | `com.anonymous.shoppinglist.dev` | Supabase Development |
-| Production | Shopping List Prod | `com.anonymous.shoppinglist` | Supabase Production |
+| Local | `SL-Local` | `com.anonymous.shoppinglist.local` | Local Supabase |
+| Development | `SL-Dev` | `com.anonymous.shoppinglist.dev` | Supabase Development |
+| Production | `SL-Prod` | `com.anonymous.shoppinglist` | Supabase Production |
 
-Because the package IDs are different, all three applications can be installed on the same Android device.
+Because the package IDs are different, Local, Development and Production can be installed independently on the same Android device.
 
 ---
 
@@ -319,8 +329,6 @@ A common SDK location on macOS is:
 ~/Library/Android/sdk
 ```
 
-Android Studio may install the required SDK components automatically.
-
 ---
 
 # 12. Android Emulator
@@ -340,11 +348,7 @@ The project was tested using:
 Pixel 8
 ```
 
-Choose an Android system image compatible with the current project configuration.
-
-Download the image if Android Studio asks for it.
-
-Create the emulator and start it.
+Start the emulator and wait until Android finishes booting.
 
 ---
 
@@ -372,8 +376,6 @@ You should see something similar to:
 List of devices attached
 emulator-5554    device
 ```
-
-If the device appears as `device`, ADB is working.
 
 ---
 
@@ -481,8 +483,6 @@ These files are ignored by Git.
 
 They contain environment-specific configuration and must never be committed to GitHub.
 
-Each environment has its own Supabase configuration.
-
 ---
 
 ## Local
@@ -501,11 +501,7 @@ The Local URL uses:
 10.0.2.2
 ```
 
-because this is the special Android Emulator address for accessing services running on the host computer.
-
-Local does not use a Supabase Cloud project.
-
-It uses the Supabase instance running locally through Docker.
+because this is the Android Emulator address for accessing services running on the host computer.
 
 ---
 
@@ -537,16 +533,6 @@ Replace the placeholders with values from the Production Supabase Cloud project.
 
 ---
 
-## Important
-
-The values shown above are placeholders.
-
-Do not copy them literally.
-
-Real environment files should contain the actual values for the corresponding environment, but the files themselves must remain uncommitted.
-
----
-
 # 18. Local Environment
 
 The Local application uses Supabase running locally through Docker.
@@ -572,8 +558,6 @@ Local PostgreSQL
 
 Local data never reaches the Development or Production databases.
 
-Local Supabase does not require a Supabase Cloud project.
-
 ---
 
 # 19. Development Environment
@@ -583,7 +567,7 @@ The Development environment uses a separate Supabase Cloud project.
 Application:
 
 ```text
-Shopping List Dev
+SL-Dev
 ```
 
 Android package:
@@ -603,7 +587,7 @@ The Production environment uses a separate Supabase Cloud project.
 Application:
 
 ```text
-Shopping List Prod
+SL-Prod
 ```
 
 Android package:
@@ -624,31 +608,49 @@ The project uses:
 app.config.ts
 ```
 
-instead of a static `app.json`.
-
 The environment is read from:
 
 ```ts
 process.env.EXPO_PUBLIC_APP_ENV
 ```
 
-The application name is generated dynamically:
+The application name is generated dynamically.
 
-```ts
-name: `Shopping List ${appEnv}`,
-```
-
-Therefore:
+For example:
 
 ```text
-Local → Shopping List Local
-Dev   → Shopping List Dev
-Prod  → Shopping List Prod
+Local → SL-Local v1.0.0 (100)
+Dev   → SL-Dev v1.0.0 (200)
+Prod  → SL-Prod v1.0.0 (300)
 ```
 
-Android package IDs are also selected dynamically.
+The Android package IDs are also selected dynamically:
 
-Version codes:
+```text
+Local → com.anonymous.shoppinglist.local
+Dev   → com.anonymous.shoppinglist.dev
+Prod  → com.anonymous.shoppinglist
+```
+
+---
+
+# 22. Application Version and Build Number
+
+The semantic application version is currently:
+
+```text
+1.0.0
+```
+
+It is defined in:
+
+```text
+app.config.ts
+```
+
+The Android `versionCode` is environment-specific.
+
+Default values:
 
 ```text
 Local → 100
@@ -656,39 +658,110 @@ Dev   → 200
 Prod  → 300
 ```
 
----
+The value can be overridden using:
 
-## Verify Expo configuration
+```text
+APP_BUILD_NUMBER
+```
 
-Local:
+For example:
 
 ```bash
-npx expo config --type public
+APP_BUILD_NUMBER=206 pnpm build:apk:dev
 ```
+
+This produces a Development APK with Android build number:
+
+```text
+206
+```
+
+---
+
+## Application name
+
+The Android application name is generated from the environment, version and build number.
+
+For example:
+
+```text
+SL-Dev v1.0.0 (206)
+```
+
+The APK filename uses the same information.
+
+---
+
+## APK naming convention
+
+The project uses:
+
+```text
+SL-{Environment}-build-{BuildNumber}-v{Version}.apk
+```
+
+Examples:
+
+```text
+SL-Dev-build-200-v1.0.0.apk
+SL-Dev-build-206-v1.0.0.apk
+SL-Prod-build-300-v1.0.0.apk
+SL-Prod-build-301-v1.0.0.apk
+```
+
+The application also displays the same identifier inside the main screen:
+
+```text
+SL-Dev-build-206-v1.0.0
+```
+
+This makes it easy to identify exactly which build is installed.
+
+---
+
+## GitHub Actions build numbers
+
+GitHub Actions automatically generates build numbers.
 
 Development:
 
-```bash
-dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 npx expo config --type public
+```text
+200 + GITHUB_RUN_NUMBER
 ```
 
 Production:
 
-```bash
-dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 npx expo config --type public
+```text
+300 + GITHUB_RUN_NUMBER
 ```
 
-When checking the configuration, verify:
+For example, if the Development workflow has:
 
-- application name;
-- environment;
-- version;
-- Android package;
-- Supabase URL.
+```text
+GITHUB_RUN_NUMBER=6
+```
+
+the resulting build number is:
+
+```text
+206
+```
+
+The resulting APK is:
+
+```text
+SL-Dev-build-206-v1.0.0.apk
+```
+
+Production works the same way:
+
+```text
+300 + GITHUB_RUN_NUMBER
+```
 
 ---
 
-# 22. Local Supabase
+# 23. Local Supabase
 
 ## Install Supabase CLI
 
@@ -713,8 +786,6 @@ For operations involving Supabase Cloud:
 ```bash
 supabase login
 ```
-
-The browser will open for authentication.
 
 ---
 
@@ -771,7 +842,7 @@ Do not stop or delete unrelated PostgreSQL containers just to start Supabase.
 
 ---
 
-# 23. Supabase Cloud
+# 24. Supabase Cloud
 
 The project uses two separate Supabase Cloud projects:
 
@@ -782,17 +853,11 @@ Shopping List
 
 The Development and Production projects must remain separate.
 
-Do not create application tables manually in the Cloud Dashboard.
-
 Database structure should be created through migrations.
 
 ---
 
-## Development and Production project setup
-
-Each environment has its own Supabase Cloud project.
-
-The setup should look like:
+## Cloud architecture
 
 ```text
 Supabase Organization
@@ -804,36 +869,28 @@ Supabase Organization
         └── Production database
 ```
 
-When setting up a new copy of the project, obtain the values for each environment from the corresponding Supabase project.
-
-Do not use the Development project's URL or key for Production, or vice versa.
+Do not use the Development project's URL or key for Production.
 
 ---
 
-# 24. Supabase Values and Credentials
+# 25. Supabase Values and Credentials
 
-This section explains where each required value comes from.
-
-There are four different types of values used by the project:
+The project uses:
 
 1. Project URL
 2. Publishable Key
 3. Project Reference ID
 4. Supabase Access Token
 
-They have different purposes and different security requirements.
+These values have different purposes and security requirements.
 
 ---
 
-## 24.1 Supabase Project URL
+## 25.1 Supabase Project URL
 
 The Project URL is used by the application to connect to Supabase.
 
-### Development
-
-Open the **Development Supabase project**.
-
-Go to:
+Find it in:
 
 ```text
 Supabase Dashboard
@@ -842,62 +899,23 @@ Supabase Dashboard
 → API
 ```
 
-Find:
-
-```text
-Project URL
-```
-
-It has a format similar to:
+The URL has a format similar to:
 
 ```text
 https://<PROJECT_REF>.supabase.co
 ```
 
-Put it into:
+Use the Development URL in `.env.development`.
 
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://<DEVELOPMENT_PROJECT_REF>.supabase.co
-```
-
-### Production
-
-Open the **Production Supabase project**.
-
-Go to:
-
-```text
-Supabase Dashboard
-→ Project
-→ Settings
-→ API
-```
-
-Find:
-
-```text
-Project URL
-```
-
-Put it into:
-
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://<PRODUCTION_PROJECT_REF>.supabase.co
-```
-
-The Development and Production URLs must be different.
+Use the Production URL in `.env.production`.
 
 ---
 
-## 24.2 Supabase Publishable Key
+## 25.2 Supabase Publishable Key
 
 The mobile application uses the Supabase **Publishable Key**.
 
-### Where to find it
-
-Open the corresponding Supabase project.
-
-Go to:
+Find it in:
 
 ```text
 Supabase Dashboard
@@ -906,79 +924,33 @@ Supabase Dashboard
 → API
 ```
 
-Find:
+Use the corresponding key for each environment.
 
-```text
-Publishable Key
-```
-
-Copy the publishable key.
-
-For Development:
-
-```env
-EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<DEVELOPMENT_PUBLISHABLE_KEY>
-```
-
-For Production:
-
-```env
-EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<PRODUCTION_PUBLISHABLE_KEY>
-```
-
-For Local, use the publishable key provided by the local Supabase instance.
-
----
-
-## Publishable Key vs Secret Key
-
-The mobile application must use the:
-
-```text
-Publishable Key
-```
-
-Do **not** use:
+Do not use:
 
 ```text
 Secret Key
 ```
 
-Do **not** use:
+or:
 
 ```text
 service_role
 ```
 
-keys in the mobile application.
+inside the mobile application.
 
-Secret/service-role credentials have elevated privileges and must remain server-side.
+Publishable keys are designed for client applications.
 
-A publishable key is designed to be used by client applications.
-
-However, a publishable key does not replace database security.
-
-Database access must be protected by:
-
-```text
-Row Level Security (RLS)
-+
-appropriate RLS policies
-```
+However, database security must still be enforced using Row Level Security.
 
 ---
 
-## 24.3 Supabase Project Reference ID
+## 25.3 Supabase Project Reference ID
 
-The Project Reference ID uniquely identifies a Supabase project.
+The Project Reference ID identifies a Supabase project.
 
-It is required by the Supabase CLI and GitHub Actions.
-
-### Where to find it
-
-Open the corresponding Supabase project.
-
-Go to:
+It can be found under:
 
 ```text
 Supabase Dashboard
@@ -986,79 +958,40 @@ Supabase Dashboard
 → General
 ```
 
-Look for the project's:
+It is required by the Supabase CLI and GitHub Actions.
 
-```text
-Project ID / Reference ID
-```
-
-The exact label may vary slightly depending on the current Supabase Dashboard version.
-
-Use the Development project's reference ID for:
-
-```text
-SUPABASE_DEV_PROJECT_REF
-```
-
-Use the Production project's reference ID for:
-
-```text
-SUPABASE_PROD_PROJECT_REF
-```
-
-These values identify projects but do not provide database access by themselves.
-
-For that reason, the Project Reference ID is **not a password or token**.
-
-Nevertheless, the README intentionally uses placeholders instead of storing the project's actual infrastructure identifiers.
+The README intentionally does not contain the actual project IDs.
 
 ---
 
-## 24.4 Supabase Access Token for GitHub Actions
+## 25.4 Supabase Access Token
 
-GitHub Actions needs a Supabase Personal Access Token to execute database migrations against Supabase Cloud.
+GitHub Actions requires a Supabase Personal Access Token to execute migrations.
 
-This token is different from the mobile application's Publishable Key.
-
-### Create the token
-
-In Supabase:
+Create it under:
 
 ```text
 Supabase Dashboard
 → Account
 → Access Tokens
-→ Create new token
 ```
 
-Create a token specifically for GitHub Actions.
+Create a dedicated token for GitHub Actions.
 
-A descriptive name such as:
-
-```text
-GitHub Actions
-```
-
-is recommended.
-
-Copy the generated token and store it securely.
-
-### Important
-
-The token value must **never** be:
+The token must never be:
 
 - committed to Git;
-- added to the README;
+- added to README;
 - added to source code;
 - added to `.env` files;
 - sent through chat;
-- included in a GitHub Actions YAML file.
+- included directly in GitHub Actions YAML.
 
-The token should only be stored as a GitHub Actions secret.
+It should only be stored as a GitHub Actions secret.
 
 ---
 
-# 25. Database Migrations
+# 26. Database Migrations
 
 Database schema changes are managed using Supabase migrations.
 
@@ -1082,20 +1015,11 @@ supabase/migrations/
 
 ## Create a migration
 
-Run:
-
 ```bash
 pnpm db:migration:new add_description_to_lists
 ```
 
 This creates a new SQL migration file.
-
-Example:
-
-```sql
-alter table public.lists
-add column description text;
-```
 
 ---
 
@@ -1123,9 +1047,7 @@ pnpm db:migration:list
 
 ---
 
-## Reset the Local database
-
-To completely rebuild the Local database from migrations:
+## Reset Local database
 
 ```bash
 supabase db reset
@@ -1133,36 +1055,28 @@ supabase db reset
 
 This is destructive.
 
-It deletes the current Local database contents and recreates the database from the migration history.
+It deletes the current Local database and recreates it from the migration history.
 
-Do not use this against Production.
+Never use this against Production.
 
 ---
 
-# 26. Migration Development Workflow
+# 27. Migration Development Workflow
 
-The recommended workflow for every database change is:
+The recommended workflow is:
 
 ```text
 Create migration
       ↓
 Write SQL
       ↓
-Start Local Supabase
+Run Local Supabase
       ↓
 Apply migration
       ↓
-Check migration status
+Verify schema
       ↓
-Check migration history
-      ↓
-Open Supabase Studio
-      ↓
-Verify table/schema
-      ↓
-Run application
-      ↓
-Test database query
+Test application
       ↓
 Commit migration
       ↓
@@ -1172,156 +1086,22 @@ develop
       ↓
 Development Supabase
       ↓
+Verify
+      ↓
+Pull Request
+      ↓
 master
       ↓
 Production Supabase
 ```
 
----
+Once a migration has been deployed or shared, do not rewrite it.
 
-## Step 1 — Create migration
-
-```bash
-pnpm db:migration:new add_something
-```
+Create a new migration for corrections.
 
 ---
 
-## Step 2 — Edit SQL
-
-Open the generated file under:
-
-```text
-supabase/migrations/
-```
-
-Write the required SQL.
-
----
-
-## Step 3 — Start Local Supabase
-
-```bash
-supabase start
-```
-
-Check:
-
-```bash
-pnpm db:status
-```
-
----
-
-## Step 4 — Apply migration
-
-```bash
-pnpm db:migration:up
-```
-
----
-
-## Step 5 — Check migration history
-
-```bash
-pnpm db:migration:list
-```
-
-Make sure the new migration appears as applied.
-
----
-
-## Step 6 — Check the database visually
-
-Open:
-
-```text
-http://127.0.0.1:54323
-```
-
-Then:
-
-```text
-Table Editor
-→ lists
-```
-
-Verify:
-
-- columns;
-- types;
-- defaults;
-- constraints.
-
----
-
-## Step 7 — Test the application
-
-Start the appropriate environment:
-
-```bash
-pnpm run local
-```
-
-Test the feature that uses the changed database schema.
-
----
-
-## Step 8 — Commit
-
-Check:
-
-```bash
-git status
-```
-
-Commit the migration together with the related application code.
-
----
-
-## Step 9 — Development
-
-Create a Pull Request into:
-
-```text
-develop
-```
-
-After merging, GitHub Actions pushes the migration to Development.
-
----
-
-## Step 10 — Production
-
-After Development has been verified, merge:
-
-```text
-develop → master
-```
-
-GitHub Actions then pushes the migration to Production.
-
----
-
-## Important migration rule
-
-Once a migration has been shared or deployed, do not rewrite it.
-
-If a correction is needed, create a new migration.
-
-For example:
-
-```text
-20260907132351_create_lists.sql
-
-20260910120000_add_description_to_lists.sql
-
-20260911130000_add_completed_to_list_items.sql
-```
-
----
-
-# 27. Running the App on Android Emulator
+# 28. Running the App on Android Emulator
 
 Make sure the Android Emulator is running.
 
@@ -1331,8 +1111,6 @@ Check:
 adb devices
 ```
 
-Then choose the environment.
-
 ---
 
 ## Local
@@ -1341,13 +1119,13 @@ Then choose the environment.
 pnpm run local
 ```
 
-The application should show:
+Expected application:
 
 ```text
-Shopping List Local
+SL-Local
 ```
 
-and use:
+Expected package:
 
 ```text
 com.anonymous.shoppinglist.local
@@ -1361,13 +1139,13 @@ com.anonymous.shoppinglist.local
 pnpm run dev
 ```
 
-The application should show:
+Expected application:
 
 ```text
-Shopping List Dev
+SL-Dev
 ```
 
-and use:
+Expected package:
 
 ```text
 com.anonymous.shoppinglist.dev
@@ -1381,13 +1159,13 @@ com.anonymous.shoppinglist.dev
 pnpm run prod
 ```
 
-The application should show:
+Expected application:
 
 ```text
-Shopping List Prod
+SL-Prod
 ```
 
-and use:
+Expected package:
 
 ```text
 com.anonymous.shoppinglist
@@ -1395,7 +1173,7 @@ com.anonymous.shoppinglist
 
 ---
 
-## Why do the environment commands run `expo prebuild --clean`?
+## Why do these commands run `expo prebuild --clean`?
 
 Each environment has different native Android configuration.
 
@@ -1407,7 +1185,7 @@ Dev   → com.anonymous.shoppinglist.dev
 Prod  → com.anonymous.shoppinglist
 ```
 
-Therefore the Android native project must be regenerated when switching environments.
+Therefore the native Android project is regenerated when switching environments.
 
 The scripts use:
 
@@ -1417,195 +1195,73 @@ expo prebuild --clean
 
 before launching Android.
 
-This prevents the native project from retaining configuration from another environment.
+Do not run Local, Development and Production commands simultaneously because they regenerate the same `android/` directory.
 
 ---
 
-## Important
-
-Do not run Local, Development and Production environment commands simultaneously.
-
-They all regenerate the same:
-
-```text
-android/
-```
-
-directory.
-
-Run them sequentially.
-
----
-
-# 28. Running the App on a Physical Android Phone with Expo Go
+# 29. Running the App on a Physical Android Phone with Expo Go
 
 Expo Go is useful for everyday development.
-
-It allows the application to run on a physical Android device without building a standalone APK every time.
-
----
-
-## Install Expo Go
 
 Install Expo Go from Google Play:
 
 https://play.google.com/store/apps/details?id=host.exp.exponent
 
----
-
-## Connect the phone and Mac
-
 The Android phone and Mac should normally be connected to the same Wi-Fi network.
 
-Example:
-
-```text
-Mac
-192.168.1.100
-      │
-      │ Wi-Fi
-      │
-Phone
-192.168.1.120
-```
-
-The IP addresses above are examples only.
-
----
-
-## Start Expo
-
-From the project root:
+Start Expo:
 
 ```bash
 pnpm start
 ```
 
-Expo starts Metro and displays a QR code.
-
-Open Expo Go on the Android phone and scan the QR code.
-
-The application should open on the phone.
+Scan the QR code using Expo Go.
 
 ---
 
-## Fast Refresh with Expo Go
+## Local Supabase on a physical phone
 
-After the application is open:
-
-1. Edit a TypeScript/JavaScript file.
-2. Save it.
-3. Expo Go should update the application automatically.
-
-Expo Go is particularly useful for:
-
-- UI development;
-- React components;
-- TypeScript;
-- styles;
-- application logic;
-- API integration.
-
----
-
-## Important: Local Supabase on a physical phone
-
-There is an important difference between an Android Emulator and a physical Android device.
-
-### Android Emulator
-
-Use:
+The Android Emulator uses:
 
 ```text
 http://10.0.2.2:54321
 ```
 
-### Physical Android phone
+A physical Android phone must use the Mac's LAN IP instead.
 
-Do not use:
-
-```text
-http://10.0.2.2:54321
-```
-
-Instead, use the Mac's local network IP.
-
-For example:
-
-```text
-http://192.168.1.100:54321
-```
-
-The IP above is only an example.
-
----
-
-## Find the Mac's local IP
-
-Run:
+Find it:
 
 ```bash
 ipconfig getifaddr en0
 ```
 
-If that returns nothing:
+or:
 
 ```bash
 ipconfig getifaddr en1
 ```
 
-Example result:
+For example:
 
 ```text
 192.168.1.100
 ```
 
-Then the phone should use:
+Then the Local Supabase URL becomes:
 
 ```text
 http://192.168.1.100:54321
 ```
 
----
-
-## Local Supabase must be running
-
-Start:
-
-```bash
-supabase start
-```
-
-Check:
-
-```bash
-pnpm db:status
-```
-
-The Local Supabase API is exposed on:
-
-```text
-54321
-```
-
-The phone must be able to reach the Mac over the local network.
-
-If the phone cannot connect, check:
-
-- Mac and phone are on the same network;
-- Local Supabase is running;
-- Mac firewall is not blocking the connection;
-- the correct Mac IP is being used.
+The phone and Mac must be on the same network.
 
 ---
 
-# 29. Expo Go vs APK
-
-These are different testing methods.
+# 30. Expo Go vs APK
 
 ## Expo Go
 
-Use Expo Go for fast everyday development:
+Use Expo Go for fast development:
 
 ```text
 Code
@@ -1617,18 +1273,20 @@ Expo Go
 Fast Refresh
 ```
 
-Advantages:
+Useful for:
 
-- very fast;
-- no APK build required;
-- convenient for UI development;
-- convenient for TypeScript/JavaScript changes.
+- UI development;
+- React components;
+- TypeScript;
+- styles;
+- application logic;
+- API integration.
 
 ---
 
-## Development APK
+## Standalone APK
 
-Use the Development APK when testing the actual Android application configuration:
+Use a standalone APK when testing the actual Android application:
 
 ```text
 Code
@@ -1637,32 +1295,23 @@ Expo prebuild
   ↓
 Android build
   ↓
-SL-Dev.apk
+APK
 ```
 
-Use it for testing:
+This is useful for testing:
 
 - Android package ID;
 - native configuration;
-- native Expo plugins;
-- standalone behavior;
-- release builds.
+- Expo plugins;
+- release behavior;
+- installed application identity;
+- build number.
 
 ---
 
-## Production APK
+# 31. Fast Refresh
 
-Production should be tested with the actual Production APK:
-
-```bash
-pnpm build:apk:prod
-```
-
----
-
-# 30. Fast Refresh
-
-After Metro has started, normal JavaScript and TypeScript changes are handled by Fast Refresh.
+After Metro starts, JavaScript and TypeScript changes are normally handled by Fast Refresh.
 
 For example:
 
@@ -1670,13 +1319,9 @@ For example:
 src/app/index.tsx
 ```
 
-Change the file and save it.
+Edit the file, save it and the running application should update.
 
-The running application should update automatically.
-
-You do not need to run `expo prebuild` after every code change.
-
-Native configuration changes require rebuilding/regenerating the native project.
+Native configuration changes require a new Android build.
 
 Examples:
 
@@ -1688,37 +1333,37 @@ Examples:
 
 ---
 
-# 31. Debugging
+# 32. Debugging
 
-Debugging can be performed at several levels.
-
----
-
-## Check Android device
+## Android device
 
 ```bash
 adb devices
 ```
 
----
-
-## Check Supabase
+## Supabase
 
 ```bash
 pnpm db:status
 ```
 
----
-
-## Check migration history
+## Migration history
 
 ```bash
 pnpm db:migration:list
 ```
 
----
+## TypeScript
 
-## Check Expo configuration
+Check the entire project:
+
+```bash
+npx tsc --noEmit
+```
+
+A successful check produces no output and exits with code `0`.
+
+## Expo configuration
 
 Development:
 
@@ -1732,9 +1377,7 @@ Production:
 dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 npx expo config --type public
 ```
 
----
-
-## Check application logs
+## Application logs
 
 Use:
 
@@ -1753,56 +1396,9 @@ Metro logs can be viewed in the terminal where Expo was started.
 
 ---
 
-## Check Local database visually
+# 33. Testing Supabase from the App
 
-Open:
-
-```text
-http://127.0.0.1:54323
-```
-
-Then:
-
-```text
-Table Editor
-→ lists
-```
-
----
-
-## Debugging flow
-
-When something does not work, check in this order:
-
-```text
-1. Is Docker running?
-        ↓
-2. Is Supabase running?
-        ↓
-3. Is the Android device connected?
-        ↓
-4. Is the correct environment selected?
-        ↓
-5. Is the correct Supabase URL being used?
-        ↓
-6. Is the migration applied?
-        ↓
-7. Does the table contain the expected structure?
-        ↓
-8. Does the application reach Supabase?
-        ↓
-9. What does console.log show?
-        ↓
-10. What does the Metro/Android log show?
-```
-
----
-
-# 32. Testing Supabase from the App
-
-A simple Supabase query can be used to verify connectivity.
-
-Example:
+A simple query can be used to verify Supabase connectivity:
 
 ```ts
 const { data, error } = await supabase
@@ -1813,7 +1409,7 @@ console.log('Supabase data:', data);
 console.log('Supabase error:', error);
 ```
 
-If the connection is working:
+If the connection works:
 
 ```text
 error
@@ -1821,10 +1417,10 @@ error
 
 should be `null`.
 
-If an error occurs, inspect:
+Check:
 
 - Supabase URL;
-- publishable key;
+- Publishable Key;
 - current environment;
 - database table;
 - RLS/policies;
@@ -1833,11 +1429,15 @@ If an error occurs, inspect:
 
 ---
 
-# 33. Building Standalone APKs
+# 34. Building Standalone APKs
 
-The project provides release APK builds.
+The project provides local release APK builds.
 
-Release APKs contain the JavaScript bundle and do not require Metro.
+The APK names use the same convention as GitHub Actions.
+
+```text
+SL-{Environment}-build-{BuildNumber}-v{Version}.apk
+```
 
 ---
 
@@ -1849,10 +1449,16 @@ Run:
 pnpm build:apk:dev
 ```
 
+The default local Development build number is:
+
+```text
+200
+```
+
 Output:
 
 ```text
-SL-Dev.apk
+SL-Dev-build-200-v1.0.0.apk
 ```
 
 ---
@@ -1865,68 +1471,107 @@ Run:
 pnpm build:apk:prod
 ```
 
+The default local Production build number is:
+
+```text
+300
+```
+
 Output:
 
 ```text
-SL-Prod.apk
+SL-Prod-build-300-v1.0.0.apk
 ```
 
 ---
 
-## Why release APK?
+## Build with a specific build number
 
-Debug APKs may require Metro.
+Development:
 
-Release APKs bundle the application and can be installed and launched independently.
+```bash
+APP_BUILD_NUMBER=206 pnpm build:apk:dev
+```
 
----
-
-## Important
-
-Do not build Development and Production APKs simultaneously.
-
-Both commands use:
+Output:
 
 ```text
-android/
+SL-Dev-build-206-v1.0.0.apk
 ```
 
-and regenerate it.
+Production:
 
-Build them sequentially.
+```bash
+APP_BUILD_NUMBER=301 pnpm build:apk:prod
+```
+
+Output:
+
+```text
+SL-Prod-build-301-v1.0.0.apk
+```
+
+The same build number is also passed into `app.config.ts` and becomes the Android `versionCode`.
 
 ---
 
-# 34. Installing APKs on a Physical Android Device
+## Local vs GitHub Actions builds
 
-After building:
+Local builds use:
+
+```text
+Dev  → 200 by default
+Prod → 300 by default
+```
+
+GitHub Actions calculates the build number automatically:
+
+```text
+Dev  → 200 + GITHUB_RUN_NUMBER
+Prod → 300 + GITHUB_RUN_NUMBER
+```
+
+Therefore a GitHub Development build might be:
+
+```text
+SL-Dev-build-206-v1.0.0.apk
+```
+
+while a GitHub Production build might be:
+
+```text
+SL-Prod-build-301-v1.0.0.apk
+```
+
+---
+
+## Release APK behavior
+
+The APK is a release build.
+
+It contains the JavaScript bundle and does not require Metro to be running.
+
+---
+
+# 35. Installing APKs on a Physical Android Device
+
+After building an APK:
 
 ```bash
 ls -lh *.apk
 ```
 
-You should see:
-
-```text
-SL-Dev.apk
-SL-Prod.apk
-```
-
-A simple way to transfer them to a phone is to use a temporary HTTP server.
+You can transfer the APK to the phone using a temporary local HTTP server.
 
 ---
 
 ## Start HTTP server
 
-From the project directory:
-
 ```bash
 python3 -m http.server 8000
 ```
 
----
-
-## Find Mac IP
+Find the Mac IP:
 
 ```bash
 ipconfig getifaddr en0
@@ -1944,33 +1589,48 @@ Suppose the result is:
 192.168.1.100
 ```
 
-On the Android phone open:
+Open on the Android phone:
 
 ```text
 http://192.168.1.100:8000
 ```
 
-Download:
-
-```text
-SL-Dev.apk
-```
-
-or:
-
-```text
-SL-Prod.apk
-```
-
-Install the APK.
-
-Android may require permission for Chrome to install applications from unknown sources.
-
-After installation, disable this permission again if it is no longer needed.
+Download the required APK.
 
 ---
 
-# 35. Git Workflow
+## Testing multiple APKs
+
+Because Local, Development and Production use different package IDs, they can coexist on the same phone.
+
+For example:
+
+```text
+SL-Dev-build-200-v1.0.0.apk
+SL-Prod-build-300-v1.0.0.apk
+```
+
+can be installed simultaneously.
+
+GitHub Actions builds can also be installed alongside the local builds.
+
+This makes it possible to compare:
+
+```text
+Local Dev build
+      vs
+GitHub Dev build
+
+Local Prod build
+      vs
+GitHub Prod build
+```
+
+The build identifier displayed inside the application makes it possible to determine exactly which APK is running.
+
+---
+
+# 36. Git Workflow
 
 The project uses:
 
@@ -1982,7 +1642,7 @@ develop
 master
 ```
 
-More specifically:
+Recommended flow:
 
 ```text
 Feature Branch
@@ -1994,6 +1654,8 @@ Pull Request
 develop
       ↓
 Development
+      ↓
+Verification
       ↓
 Pull Request
       ↓
@@ -2017,8 +1679,6 @@ git checkout -b feature/my-new-feature
 ---
 
 ## Commit
-
-Check:
 
 ```bash
 git status
@@ -2048,961 +1708,4 @@ Then create a Pull Request into `develop`.
 
 ---
 
-# 36. GitHub Actions
-
-The project uses GitHub Actions to deploy database migrations.
-
-There are two workflows.
-
----
-
-## Development
-
-File:
-
-```text
-.github/workflows/supabase-development.yml
-```
-
-Runs on:
-
-```text
-develop
-```
-
-It executes:
-
-```text
-supabase db push
-```
-
-against the Development Supabase project.
-
----
-
-## Production
-
-File:
-
-```text
-.github/workflows/supabase-production.yml
-```
-
-Runs on:
-
-```text
-master
-```
-
-It executes:
-
-```text
-supabase db push
-```
-
-against the Production Supabase project.
-
----
-
-## Deployment flow
-
-```text
-Feature
-   ↓
-Pull Request
-   ↓
-develop
-   ↓
-GitHub Actions
-   ↓
-Development DB
-```
-
-Then:
-
-```text
-develop
-   ↓
-Pull Request
-   ↓
-master
-   ↓
-GitHub Actions
-   ↓
-Production DB
-```
-
----
-
-# 37. GitHub Secrets
-
-GitHub Actions requires three repository secrets:
-
-```text
-SUPABASE_ACCESS_TOKEN
-SUPABASE_DEV_PROJECT_REF
-SUPABASE_PROD_PROJECT_REF
-```
-
-Configure them under:
-
-```text
-GitHub
-→ Repository
-→ Settings
-→ Secrets and variables
-→ Actions
-→ New repository secret
-```
-
----
-
-## Required secrets
-
-| Secret | Where to get it | Purpose |
-|---|---|---|
-| `SUPABASE_ACCESS_TOKEN` | Supabase → Account → Access Tokens | Authenticates GitHub Actions with Supabase |
-| `SUPABASE_DEV_PROJECT_REF` | Development Supabase → Project Settings → General | Identifies the Development project |
-| `SUPABASE_PROD_PROJECT_REF` | Production Supabase → Project Settings → General | Identifies the Production project |
-
----
-
-## SUPABASE_ACCESS_TOKEN
-
-This is a Supabase Personal Access Token used by GitHub Actions.
-
-Create it in:
-
-```text
-Supabase Dashboard
-→ Account
-→ Access Tokens
-→ Create new token
-```
-
-Create a dedicated token for GitHub Actions.
-
-Copy the generated token.
-
-Then create the GitHub secret:
-
-```text
-Name:
-SUPABASE_ACCESS_TOKEN
-
-Value:
-<YOUR_SUPABASE_ACCESS_TOKEN>
-```
-
-The value must never be committed to the repository.
-
----
-
-## SUPABASE_DEV_PROJECT_REF
-
-Open the Development Supabase project:
-
-```text
-Supabase Dashboard
-→ Project Settings
-→ General
-```
-
-Find the Project ID / Reference ID.
-
-Create the GitHub secret:
-
-```text
-Name:
-SUPABASE_DEV_PROJECT_REF
-
-Value:
-<DEVELOPMENT_PROJECT_REF>
-```
-
----
-
-## SUPABASE_PROD_PROJECT_REF
-
-Open the Production Supabase project:
-
-```text
-Supabase Dashboard
-→ Project Settings
-→ General
-```
-
-Find the Project ID / Reference ID.
-
-Create the GitHub secret:
-
-```text
-Name:
-SUPABASE_PROD_PROJECT_REF
-
-Value:
-<PRODUCTION_PROJECT_REF>
-```
-
----
-
-## Important
-
-The actual values of these secrets should not appear in:
-
-- README;
-- Git source files;
-- GitHub Actions YAML;
-- `.env` files;
-- chat messages;
-- screenshots;
-- public documentation.
-
-The README only documents the **secret names and where to obtain their values**.
-
----
-
-# 38. SourceTree
-
-SourceTree can be used for normal Git operations.
-
-Recommended workflow:
-
-```text
-develop
-   ↓
-Create feature branch
-   ↓
-Make changes
-   ↓
-Commit
-   ↓
-Push
-   ↓
-Pull Request
-```
-
-SourceTree is useful for:
-
-- branch management;
-- staging files;
-- commits;
-- pushes;
-- visual history.
-
-The terminal is still useful for:
-
-- Expo;
-- Supabase CLI;
-- Android builds;
-- debugging;
-- Git diagnostics.
-
----
-
-## Verify Git from terminal
-
-If SourceTree reports:
-
-```text
-Git status failed with code 128
-Fatal: Not a git repository
-```
-
-verify the repository directly:
-
-```bash
-git rev-parse --show-toplevel
-```
-
-It should return the project root.
-
-If Git works from the terminal, the problem may be specific to SourceTree's repository configuration.
-
----
-
-# 39. Security
-
-## Environment files
-
-Never commit:
-
-```text
-.env.local
-.env.development
-.env.production
-```
-
-These files contain environment-specific configuration.
-
----
-
-## Never commit credentials
-
-Never commit:
-
-- Supabase Secret Keys;
-- Supabase service-role keys;
-- Supabase Personal Access Tokens;
-- database passwords;
-- GitHub Personal Access Tokens;
-- GitHub Actions credentials;
-- private keys;
-- session tokens.
-
----
-
-## Mobile application credentials
-
-The mobile application must only use the Supabase Publishable Key.
-
-Never put a Supabase Secret Key or service-role key into a mobile application.
-
-Anything bundled into a mobile application should be considered accessible to the client.
-
----
-
-## Publishable keys are not database security
-
-A Supabase Publishable Key is designed to be used in client applications.
-
-However, the Publishable Key itself does not protect database data.
-
-Database access must be controlled through:
-
-```text
-Row Level Security (RLS)
-```
-
-and appropriate policies.
-
----
-
-## RLS requirement
-
-RLS is currently disabled during the initial development stage.
-
-Before using the Production environment with real user data:
-
-1. Enable RLS on exposed application tables.
-2. Create appropriate policies.
-3. Verify that authenticated users can only access data they are allowed to access.
-4. Test the policies before production use.
-
-Do not treat the Publishable Key as a replacement for RLS.
-
----
-
-## If a secret is accidentally committed
-
-If a secret is accidentally committed:
-
-1. Consider it compromised immediately.
-2. Revoke or rotate the credential.
-3. Create a replacement credential.
-4. Update the corresponding GitHub Secret or local configuration.
-5. Remove the credential from the repository history if necessary.
-
-Deleting the secret from the latest commit is not always sufficient because Git history may still contain the old value.
-
----
-
-# 40. Troubleshooting
-
-## Wrong environment is displayed
-
-If you expected:
-
-```text
-Shopping List Dev
-```
-
-but see:
-
-```text
-Shopping List Local
-```
-
-run:
-
-```bash
-pnpm run dev
-```
-
-The environment scripts regenerate the native Android project.
-
----
-
-## Dev and Prod look like the same Android application
-
-Check the package IDs:
-
-```text
-Dev:
-com.anonymous.shoppinglist.dev
-
-Prod:
-com.anonymous.shoppinglist
-```
-
-If necessary, uninstall the old application and rebuild.
-
----
-
-## APK says Metro is unavailable
-
-Build a release APK:
-
-```bash
-pnpm build:apk:dev
-```
-
-or:
-
-```bash
-pnpm build:apk:prod
-```
-
----
-
-## Local Supabase does not work on Android Emulator
-
-Do not use:
-
-```text
-127.0.0.1
-```
-
-Use:
-
-```text
-10.0.2.2
-```
-
-Example:
-
-```text
-http://10.0.2.2:54321
-```
-
----
-
-## Local Supabase does not work on physical Android phone
-
-Do not use:
-
-```text
-10.0.2.2
-```
-
-Find the Mac IP:
-
-```bash
-ipconfig getifaddr en0
-```
-
-Then use:
-
-```text
-http://<MAC_IP>:54321
-```
-
-Make sure the phone and Mac are on the same network.
-
----
-
-## Supabase is not running
-
-Check Docker:
-
-```bash
-docker --version
-```
-
-Then:
-
-```bash
-supabase status
-```
-
-If necessary:
-
-```bash
-supabase start
-```
-
----
-
-## Migration has not been applied
-
-Run:
-
-```bash
-pnpm db:migration:list
-```
-
-Then:
-
-```bash
-pnpm db:migration:up
-```
-
-Check the database in:
-
-```text
-http://127.0.0.1:54323
-```
-
----
-
-## Local database is corrupted or needs rebuilding
-
-Run:
-
-```bash
-supabase db reset
-```
-
-Remember that this deletes Local database data.
-
----
-
-## Android Emulator is not detected
-
-Run:
-
-```bash
-adb devices
-```
-
-If no device appears:
-
-1. Start Android Emulator from Android Studio.
-2. Wait until Android finishes booting.
-3. Run:
-
-```bash
-adb devices
-```
-
-again.
-
----
-
-## GitHub Development migration did not run
-
-Open:
-
-```text
-GitHub
-→ Actions
-→ Supabase Development
-```
-
-The workflow runs when changes reach:
-
-```text
-develop
-```
-
----
-
-## GitHub Production migration did not run
-
-Open:
-
-```text
-GitHub
-→ Actions
-→ Supabase Production
-```
-
-The workflow runs when changes reach:
-
-```text
-master
-```
-
----
-
-## Supabase application connection fails
-
-Check the following:
-
-```text
-1. Is the correct environment selected?
-2. Is the correct Supabase URL configured?
-3. Is the correct Publishable Key configured?
-4. Is the Supabase project running?
-5. Is the database table present?
-6. Is RLS enabled?
-7. Are the required RLS policies present?
-8. Is the device connected to the network?
-```
-
-For Local:
-
-```bash
-supabase status
-```
-
-For Cloud:
-
-```text
-Supabase Dashboard
-→ Project
-→ API
-```
-
-Verify that the Project URL and Publishable Key correspond to the same environment.
-
----
-
-# 41. Production Safety
-
-Production must always be treated as a separate and protected environment.
-
-Before deploying a migration to Production:
-
-1. Test it locally.
-2. Verify the Local database.
-3. Merge into `develop`.
-4. Verify Development.
-5. Verify the GitHub Action.
-6. Verify the Development database.
-7. Only then merge into `master`.
-8. Verify the Production GitHub Action.
-9. Verify the Production database.
-
-The intended flow is:
-
-```text
-LOCAL
-  ↓
-DEVELOPMENT
-  ↓
-PRODUCTION
-```
-
-Never use Production as a development database.
-
-Never test destructive database operations directly against Production.
-
-Before real production data is introduced, verify that RLS and the required security policies are correctly configured.
-
----
-
-# 42. First-Time Setup Checklist
-
-## Tools
-
-- [ ] Install Node.js
-- [ ] Install pnpm
-- [ ] Install Git
-- [ ] Install IntelliJ IDEA
-- [ ] Install Docker Desktop
-- [ ] Install Android Studio
-- [ ] Install Android SDK
-- [ ] Install Android Emulator
-- [ ] Install Supabase CLI
-
-## Android
-
-- [ ] Create Pixel 8 emulator
-- [ ] Start emulator
-- [ ] Run `adb devices`
-- [ ] Verify emulator is visible
-
-## Project
-
-- [ ] Clone repository
-- [ ] Enter project directory
-- [ ] Run `pnpm install`
-
-## Supabase Cloud access
-
-- [ ] Obtain access to the Development Supabase project
-- [ ] Obtain access to the Production Supabase project
-- [ ] Find the Development Project URL
-- [ ] Find the Production Project URL
-- [ ] Find the Development Publishable Key
-- [ ] Find the Production Publishable Key
-- [ ] Find the Development Project Reference ID
-- [ ] Find the Production Project Reference ID
-- [ ] Create a Supabase Personal Access Token for GitHub Actions
-
-## Environment
-
-- [ ] Create `.env.local`
-- [ ] Create `.env.development`
-- [ ] Create `.env.production`
-- [ ] Add the correct Supabase Publishable Keys
-- [ ] Add the correct Supabase URLs
-- [ ] Verify each environment uses the correct project
-
-## Local Supabase
-
-- [ ] Start Docker
-- [ ] Run `supabase start`
-- [ ] Run `pnpm db:status`
-- [ ] Open Supabase Studio
-- [ ] Run migrations
-- [ ] Verify `lists` table
-
-## GitHub Actions
-
-- [ ] Add `SUPABASE_ACCESS_TOKEN` to GitHub Actions Secrets
-- [ ] Add `SUPABASE_DEV_PROJECT_REF` to GitHub Actions Secrets
-- [ ] Add `SUPABASE_PROD_PROJECT_REF` to GitHub Actions Secrets
-- [ ] Verify Development workflow
-- [ ] Verify Production workflow
-
-## Local App
-
-- [ ] Run `pnpm run local`
-- [ ] Verify `Shopping List Local`
-
-## Expo Go
-
-- [ ] Install Expo Go on physical Android phone
-- [ ] Connect phone and Mac to the same network
-- [ ] Run `pnpm start`
-- [ ] Scan QR code
-- [ ] Verify application opens
-- [ ] Verify Fast Refresh
-
-## Development
-
-- [ ] Configure `.env.development`
-- [ ] Run `pnpm run dev`
-- [ ] Verify `Shopping List Dev`
-- [ ] Verify Development Supabase
-
-## Production
-
-- [ ] Configure `.env.production`
-- [ ] Run `pnpm run prod`
-- [ ] Verify `Shopping List Prod`
-- [ ] Verify Production Supabase
-
-## Database security
-
-- [ ] Enable RLS before real production data is used
-- [ ] Create appropriate RLS policies
-- [ ] Test access rules
-
-## Database workflow
-
-- [ ] Create migration
-- [ ] Test migration locally
-- [ ] Verify schema in Supabase Studio
-- [ ] Commit migration
-- [ ] Create Pull Request
-- [ ] Merge into `develop`
-- [ ] Verify Development GitHub Action
-- [ ] Verify Development database
-- [ ] Merge into `master`
-- [ ] Verify Production GitHub Action
-- [ ] Verify Production database
-
-## APK
-
-- [ ] Build `SL-Dev.apk`
-- [ ] Build `SL-Prod.apk`
-- [ ] Install APKs on physical Android device
-- [ ] Verify all environments are independent
-
----
-
-# 43. Useful Commands
-
-## Install dependencies
-
-```bash
-pnpm install
-```
-
-## Run Local
-
-```bash
-pnpm run local
-```
-
-## Run Development
-
-```bash
-pnpm run dev
-```
-
-## Run Production
-
-```bash
-pnpm run prod
-```
-
-## Start Expo
-
-```bash
-pnpm start
-```
-
-## Android devices
-
-```bash
-adb devices
-```
-
-## Docker
-
-```bash
-docker --version
-```
-
-## Supabase
-
-```bash
-supabase start
-supabase stop
-supabase status
-supabase db reset
-```
-
-## Database
-
-```bash
-pnpm db:status
-pnpm db:migration:new <migration_name>
-pnpm db:migration:up
-pnpm db:migration:list
-```
-
-## Development APK
-
-```bash
-pnpm build:apk:dev
-```
-
-Output:
-
-```text
-SL-Dev.apk
-```
-
-## Production APK
-
-```bash
-pnpm build:apk:prod
-```
-
-Output:
-
-```text
-SL-Prod.apk
-```
-
-## Find Mac IP
-
-```bash
-ipconfig getifaddr en0
-```
-
-or:
-
-```bash
-ipconfig getifaddr en1
-```
-
-## Serve APK files locally
-
-```bash
-python3 -m http.server 8000
-```
-
-## Check Git repository
-
-```bash
-git status
-```
-
-```bash
-git rev-parse --show-toplevel
-```
-
----
-
-# Development Flow Summary
-
-The complete development workflow is:
-
-```text
-                 FEATURE DEVELOPMENT
-                         │
-                         ▼
-                  Feature Branch
-                         │
-                         ▼
-                       LOCAL
-                         │
-              ┌──────────┴──────────┐
-              │                     │
-          Local App           Local Supabase
-              │                     │
-              └──────────┬──────────┘
-                         │
-                         ▼
-                    Pull Request
-                         │
-                         ▼
-                      develop
-                         │
-                         ▼
-                  GitHub Actions
-                         │
-                         ▼
-               Development Supabase
-                         │
-                         ▼
-                    Test / Verify
-                         │
-                         ▼
-                    Pull Request
-                         │
-                         ▼
-                      master
-                         │
-                         ▼
-                  GitHub Actions
-                         │
-                         ▼
-                 Production Supabase
-                         │
-                         ▼
-                    Production
-```
-
----
-
-# Recommended Daily Workflow
-
-For normal application development:
-
-```text
-1. Start Docker
-2. Start Local Supabase
-3. Start the application
-4. Use Expo Go or Android Emulator
-5. Develop with Fast Refresh
-6. Test Supabase queries
-7. Create migrations when database schema changes
-8. Verify migrations locally
-9. Commit changes
-10. Push feature branch
-11. Create Pull Request into develop
-12. Verify Development
-13. Merge into master when ready
-14. Verify Production
-```
-
-The key principle is:
-
-> **Develop locally first, verify in Development second, deploy to Production last.**
+# 37. GitHub Acti
