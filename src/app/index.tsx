@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 
 const appEnv = Constants.expoConfig?.extra?.appEnv ?? 'Unknown';
 const appVersion = Constants.expoConfig?.version ?? 'Unknown';
+const appBuildNumber =
+    Constants.expoConfig?.android?.versionCode ?? 'Unknown';
 
 export default function HomeScreen() {
     useEffect(() => {
@@ -18,14 +20,17 @@ export default function HomeScreen() {
         testSupabaseConnection();
     }, []);
 
+    const appBuildInfo =
+        `SL-${appEnv}-build-${appBuildNumber}-v${appVersion}`;
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>
-                Shopping List {appEnv} 123
+                Shopping List {appEnv} github + README
             </Text>
 
             <Text style={styles.version}>
-                Version {appVersion}
+                {appBuildInfo}
             </Text>
 
             <Text>Our app starts here.</Text>
@@ -43,7 +48,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: '600',
-        marginBottom: 8,
+        marginBottom: 16,
     },
 
     version: {
