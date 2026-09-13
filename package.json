@@ -30,14 +30,17 @@
     "web": "expo start --web",
     "lint": "expo lint",
 
-    "local": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 expo run:android",
-    "dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 expo run:android",
-    "prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 expo run:android",
+    "local": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
+    "dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
+    "prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
 
     "db:status": "supabase status",
     "db:migration:new": "supabase migration new",
     "db:migration:up": "supabase migration up",
-    "db:migration:list": "supabase migration list"
+    "db:migration:list": "supabase migration list",
+
+    "build:apk:dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./SL-Dev.apk'",
+    "build:apk:prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./SL-Prod.apk'"
   },
   "private": true
 }
