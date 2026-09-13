@@ -54,10 +54,6 @@ jobs:
       - name: Build Production APK
         run: pnpm build:apk:prod
 
-      - name: Rename APK
-        run: |
-          mv SL-Prod.apk "SL-Prod-build-${APP_BUILD_NUMBER}-v1.0.0.apk"
-
       - name: Upload Production APK
         uses: actions/upload-artifact@v4
         with:
