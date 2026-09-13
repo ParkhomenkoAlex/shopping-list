@@ -54,10 +54,6 @@ jobs:
       - name: Build Development APK
         run: pnpm build:apk:dev
 
-      - name: Rename APK
-        run: |
-          mv SL-Dev.apk "SL-Dev-build-${APP_BUILD_NUMBER}-v1.0.0.apk"
-
       - name: Upload Development APK
         uses: actions/upload-artifact@v4
         with:
