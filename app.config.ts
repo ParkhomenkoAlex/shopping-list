@@ -2,6 +2,8 @@ import type { ExpoConfig } from 'expo/config';
 
 const appEnv = process.env.EXPO_PUBLIC_APP_ENV ?? 'Local';
 
+const appVersion = '1.0.0';
+
 const defaultVersionCodes = {
   Local: 100,
   Dev: 200,
@@ -16,9 +18,9 @@ const versionCode = Number(
 );
 
 const config: ExpoConfig = {
-  name: `SL-${appEnv}`,
+  name: `SL-${appEnv} v${appVersion} (${versionCode})`,
   slug: 'shopping-list',
-  version: '1.0.0',
+  version: appVersion,
   orientation: 'portrait',
 
   icon: './assets/images/icon.png',
