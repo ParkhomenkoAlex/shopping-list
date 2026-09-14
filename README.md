@@ -150,11 +150,11 @@ Local PostgreSQL
 
 ## Environment matrix
 
-| Environment | App Name | Android Package | Database |
-|---|---|---|---|
-| Local | `SL-Local` | `com.anonymous.shoppinglist.local` | Local Supabase |
-| Development | `SL-Dev` | `com.anonymous.shoppinglist.dev` | Supabase Development |
-| Production | `SL-Prod` | `com.anonymous.shoppinglist` | Supabase Production |
+| Environment | App Name   | Android Package                    | Database             |
+| ----------- | ---------- | ---------------------------------- | -------------------- |
+| Local       | `SL-Local` | `com.anonymous.shoppinglist.local` | Local Supabase       |
+| Development | `SL-Dev`   | `com.anonymous.shoppinglist.dev`   | Supabase Development |
+| Production  | `SL-Prod`  | `com.anonymous.shoppinglist`       | Supabase Production  |
 
 Because the package IDs are different, Local, Development and Production can be installed independently on the same Android device.
 
@@ -434,8 +434,8 @@ shopping-list/
 │
 ├── .github/
 │   └── workflows/
-│       ├── supabase-development.yml
-│       └── supabase-production.yml
+│       ├── supabaseClient-development.yml
+│       └── supabaseClient-production.yml
 │
 ├── assets/
 │
@@ -447,9 +447,9 @@ shopping-list/
 │   │   └── index.tsx
 │   │
 │   └── lib/
-│       └── supabase.ts
+│       └── SupabaseClient.ts
 │
-├── supabase/
+├── supabaseClient/
 │   ├── .gitignore
 │   ├── config.toml
 │   └── migrations/
@@ -511,7 +511,7 @@ because this is the Android Emulator address for accessing services running on t
 
 ```env
 EXPO_PUBLIC_APP_ENV=Dev
-EXPO_PUBLIC_SUPABASE_URL=https://<DEVELOPMENT_PROJECT_REF>.supabase.co
+EXPO_PUBLIC_SUPABASE_URL=https://<DEVELOPMENT_PROJECT_REF>.supabaseClient.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<DEVELOPMENT_PUBLISHABLE_KEY>
 ```
 
@@ -525,7 +525,7 @@ Replace the placeholders with values from the Development Supabase Cloud project
 
 ```env
 EXPO_PUBLIC_APP_ENV=Prod
-EXPO_PUBLIC_SUPABASE_URL=https://<PRODUCTION_PROJECT_REF>.supabase.co
+EXPO_PUBLIC_SUPABASE_URL=https://<PRODUCTION_PROJECT_REF>.supabaseClient.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<PRODUCTION_PUBLISHABLE_KEY>
 ```
 
@@ -611,7 +611,7 @@ app.config.ts
 The environment is read from:
 
 ```ts
-process.env.EXPO_PUBLIC_APP_ENV
+process.env.EXPO_PUBLIC_APP_ENV;
 ```
 
 The application name is generated dynamically.
@@ -768,13 +768,13 @@ Production works the same way:
 Install:
 
 ```bash
-brew install supabase
+brew install supabaseClient
 ```
 
 Verify:
 
 ```bash
-supabase --version
+supabaseClient --version
 ```
 
 ---
@@ -784,7 +784,7 @@ supabase --version
 For operations involving Supabase Cloud:
 
 ```bash
-supabase login
+supabaseClient login
 ```
 
 ---
@@ -796,13 +796,13 @@ Make sure Docker Desktop is running.
 Then:
 
 ```bash
-supabase start
+supabaseClient start
 ```
 
 Check:
 
 ```bash
-supabase status
+supabaseClient status
 ```
 
 Typical local services:
@@ -829,12 +829,12 @@ http://127.0.0.1:54323
 
 ## Local Supabase ports
 
-| Service | Port |
-|---|---:|
+| Service      |    Port |
+| ------------ | ------: |
 | Supabase API | `54321` |
-| PostgreSQL | `54322` |
-| Studio | `54323` |
-| Mailpit | `54324` |
+| PostgreSQL   | `54322` |
+| Studio       | `54323` |
+| Mailpit      | `54324` |
 
 Another PostgreSQL project may use port `5432`.
 
@@ -902,7 +902,7 @@ Supabase Dashboard
 The URL has a format similar to:
 
 ```text
-https://<PROJECT_REF>.supabase.co
+https://<PROJECT_REF>.supabaseClient.co
 ```
 
 Use the Development URL in `.env.development`.
@@ -1008,7 +1008,7 @@ create table lists (
 Migrations are stored in:
 
 ```text
-supabase/migrations/
+supabaseClient/migrations/
 ```
 
 ---
@@ -1050,7 +1050,7 @@ pnpm db:migration:list
 ## Reset Local database
 
 ```bash
-supabase db reset
+supabaseClient db reset
 ```
 
 This is destructive.
@@ -1401,9 +1401,7 @@ Metro logs can be viewed in the terminal where Expo was started.
 A simple query can be used to verify Supabase connectivity:
 
 ```ts
-const { data, error } = await supabase
-  .from('lists')
-  .select('*');
+const { data, error } = await supabaseClient.from('lists').select('*');
 
 console.log('Supabase data:', data);
 console.log('Supabase error:', error);
