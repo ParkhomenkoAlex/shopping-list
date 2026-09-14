@@ -1,9 +1,9 @@
 name: Supabase Production
 
-on:
-  push:
-    branches:
-      - master
+#on:
+#  push:
+#    branches:
+#      - master
 
 jobs:
   migrate-and-build:
