@@ -1,35 +1,24 @@
+import { router } from 'expo-router';
 import Constants from 'expo-constants';
-import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-
-import { supabase } from '@/lib/supabase';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const appEnv = Constants.expoConfig?.extra?.appEnv ?? 'Unknown';
 const appVersion = Constants.expoConfig?.version ?? 'Unknown';
 const appBuild = Constants.expoConfig?.android?.versionCode ?? 'Unknown';
 
 export default function HomeScreen() {
-    useEffect(() => {
-        const testSupabaseConnection = async () => {
-            const { data, error } = await supabase
-                .from('lists')
-                .select('*');
-        };
-
-        testSupabaseConnection();
-    }, []);
-
     return (
         <View style={styles.container}>
             <Text style={styles.title}>
                 SL-{appEnv}-{appBuild}-v{appVersion}
             </Text>
 
-            <Text style={styles.version}>
-                Version {appVersion} • Build {appBuild}
-            </Text>
-
-            <Text>Our app starts here.</Text>
+            <Pressable
+                style={styles.button}
+                onPress={() => router.push('/lists')}
+            >
+                <Text style={styles.buttonText}>Our app starts here</Text>
+            </Pressable>
         </View>
     );
 }
@@ -44,10 +33,19 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '600',
-        marginBottom: 8,
+        marginBottom: 24,
     },
 
-    version: {
-        marginBottom: 8,
+    button: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 8,
+        backgroundColor: '#208AEF',
+    },
+
+    buttonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
