@@ -1,9 +1,15 @@
 name: Supabase Production
 
-on:
-#  push:
-#    branches:
-#      - master
+"on":
+  workflow_dispatch:
+
+# To enable automatic builds on every push to master:
+# Uncomment the "push" block below.
+# Keep "workflow_dispatch" to allow manual runs.
+#
+# push:
+#   branches:
+#     - master
 
 jobs:
   migrate-and-build:
