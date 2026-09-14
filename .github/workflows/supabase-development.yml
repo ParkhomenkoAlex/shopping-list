@@ -1,9 +1,9 @@
 name: Supabase Development
 
-on:
-  push:
-    branches:
-      - develop
+#on:
+#  push:
+#    branches:
+#      - develop
 
 jobs:
   migrate-and-build:
