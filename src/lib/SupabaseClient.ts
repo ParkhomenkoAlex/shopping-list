@@ -1,16 +1,25 @@
+import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/types/database/database.types';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+type AppExtra = {
+    appEnv?: string;
+    supabaseUrl?: string;
+    supabasePublishableKey?: string;
+};
+
+const extra = Constants.expoConfig?.extra as AppExtra | undefined;
+
+const supabaseUrl = extra?.supabaseUrl;
+const supabasePublishableKey = extra?.supabasePublishableKey;
 
 if (!supabaseUrl) {
-    throw new Error('EXPO_PUBLIC_SUPABASE_URL is not defined');
+    throw new Error('Supabase URL is not configured');
 }
 
 if (!supabasePublishableKey) {
-    throw new Error('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY is not defined');
+    throw new Error('Supabase publishable key is not configured');
 }
 
 export const supabase = createClient<Database>(
