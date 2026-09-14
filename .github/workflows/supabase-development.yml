@@ -1,7 +1,7 @@
 name: Supabase Development
 
-"on":
-  workflow_dispatch:
+'on':
+    workflow_dispatch:
 
 # To enable automatic builds on every push to develop:
 # Uncomment the "push" block below.
@@ -12,57 +12,57 @@ name: Supabase Development
 #     - develop
 
 jobs:
-  migrate-and-build:
-    runs-on: ubuntu-latest
+    migrate-and-build:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.11.0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
+            - name: Setup Supabase CLI
+              uses: supabase/setup-cli@v1
+              with:
+                  version: latest
 
-      - name: Push migrations to Development
-        run: supabase db push --project-ref ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+            - name: Push migrations to Development
+              run: supabase db push --project-ref ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
+              env:
+                  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Calculate build number
-        run: |
-          BUILD_NUMBER=$((200 + GITHUB_RUN_NUMBER))
-          echo "APP_BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
-          echo "Build number: $BUILD_NUMBER"
+            - name: Calculate build number
+              run: |
+                  BUILD_NUMBER=$((200 + GITHUB_RUN_NUMBER))
+                  echo "APP_BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+                  echo "Build number: $BUILD_NUMBER"
 
-      - name: Create Development environment file
-        run: |
-          cat > .env.development <<EOF
-          EXPO_PUBLIC_APP_ENV=Dev
-          EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_DEV_URL }}
-          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_DEV_PUBLISHABLE_KEY }}
-          EOF
+            - name: Create Development environment file
+              run: |
+                  cat > .env.development <<EOF
+                  EXPO_PUBLIC_APP_ENV=Dev
+                  EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_DEV_URL }}
+                  EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_DEV_PUBLISHABLE_KEY }}
+                  EOF
 
-      - name: Build Development APK
-        run: pnpm build:apk:dev
+            - name: Build Development APK
+              run: pnpm build:apk:dev
 
-      - name: Upload Development APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SL-Dev-${{ env.APP_BUILD_NUMBER }}-v1.0.0
-          path: SL-Dev-${{ env.APP_BUILD_NUMBER }}-v1.0.0.apk
-          retention-days: 30
+            - name: Upload Development APK
+              uses: actions/upload-artifact@v4
+              with:
+                  name: SL-Dev-${{ env.APP_BUILD_NUMBER }}-v1.0.0
+                  path: SL-Dev-${{ env.APP_BUILD_NUMBER }}-v1.0.0.apk
+                  retention-days: 30

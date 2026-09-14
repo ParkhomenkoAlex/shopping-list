@@ -1,7 +1,7 @@
 # For detailed configuration reference documentation, visit:
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
-# working directory name when running `supabase init`.
+# working directory name when running `supabaseClient init`.
 project_id = "shopping-list"
 
 [api]
@@ -59,14 +59,14 @@ max_client_conn = 100
 # If disabled, migrations will be skipped during a db push or reset.
 enabled = true
 # Specifies an ordered list of schema files, directories, or glob patterns that describe your database.
-# Supports paths relative to supabase directory: "./schemas/*.sql", "./database".
+# Supports paths relative to supabaseClient directory: "./schemas/*.sql", "./database".
 schema_paths = []
 
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
-# Supports glob patterns relative to supabase directory: "./seeds/*.sql"
+# Supports glob patterns relative to supabaseClient directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]
 
 [db.network_restrictions]
@@ -245,13 +245,13 @@ otp_expiry = 3600
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# content_path = "./supabaseClient/templates/invite.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
 # subject = "Your password has been changed"
-# content_path = "./supabase/templates/password_changed_notification.html"
+# content_path = "./supabaseClient/templates/password_changed_notification.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
@@ -407,7 +407,7 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # Set enabled = false to fall back to the legacy migra engine.
 [experimental.pgdelta]
 enabled = true
-# Directory under `supabase/` where declarative files are written.
+# Directory under `supabaseClient/` where declarative files are written.
 # declarative_schema_path = "./schemas"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
