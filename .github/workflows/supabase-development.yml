@@ -1,6 +1,6 @@
 name: Supabase Development
 
-#on:
+on:
 #  push:
 #    branches:
 #      - develop

@@ -1,6 +1,6 @@
 name: Supabase Production
 
-#on:
+on:
 #  push:
 #    branches:
 #      - master
