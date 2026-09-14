@@ -18,7 +18,7 @@ const versionCode = Number(
 );
 
 const config: ExpoConfig = {
-  name: `SL-${appEnv} v${appVersion} (${versionCode})`,
+  name: `SL-${appEnv}-${versionCode}-v${appVersion}`,
   slug: 'shopping-list',
   version: appVersion,
   orientation: 'portrait',

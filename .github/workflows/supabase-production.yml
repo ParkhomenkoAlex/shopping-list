@@ -57,6 +57,6 @@ jobs:
       - name: Upload Production APK
         uses: actions/upload-artifact@v4
         with:
-          name: SL-Prod-build-${{ env.APP_BUILD_NUMBER }}-v1.0.0
-          path: SL-Prod-build-${{ env.APP_BUILD_NUMBER }}-v1.0.0.apk
+          name: SL-Prod-${{ env.APP_BUILD_NUMBER }}-v1.0.0
+          path: SL-Prod-${{ env.APP_BUILD_NUMBER }}-v1.0.0.apk
           retention-days: 30
