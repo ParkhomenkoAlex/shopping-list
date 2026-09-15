@@ -997,7 +997,7 @@ Database schema changes are managed using Supabase migrations.
 
 The initial migration creates the `lists` table:
 
-```sql
+```
 create table lists (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -1007,7 +1007,7 @@ create table lists (
 
 Migrations are stored in:
 
-```text
+```
 supabaseClient/migrations/
 ```
 
@@ -1015,7 +1015,7 @@ supabaseClient/migrations/
 
 ## Create a migration
 
-```bash
+```
 pnpm db:migration:new add_description_to_lists
 ```
 
@@ -1025,7 +1025,7 @@ This creates a new SQL migration file.
 
 ## Check database status
 
-```bash
+```
 pnpm db:status
 ```
 
@@ -1033,15 +1033,33 @@ pnpm db:status
 
 ## Apply pending migrations locally
 
-```bash
+```
 pnpm db:migration:up
 ```
 
 ---
 
+## Regenerate database types
+
+```
+pnpm db:types
+```
+
+This regenerates the TypeScript database types from the current Local Supabase database schema.
+
+The generated file is:
+
+```
+src/types/database/database.types.ts
+```
+
+Run this command after applying database schema changes to keep the TypeScript types synchronized with the database structure.
+
+---
+
 ## Check migration history
 
-```bash
+```
 pnpm db:migration:list
 ```
 
@@ -1049,7 +1067,7 @@ pnpm db:migration:list
 
 ## Reset Local database
 
-```bash
+```
 supabaseClient db reset
 ```
 

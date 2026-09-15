@@ -34,17 +34,14 @@
         "lint": "expo lint",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-
         "local": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
         "dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
         "prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
-
         "db:status": "supabase status",
-
         "db:migration:new": "supabase migration new",
         "db:migration:up": "supabase migration up",
         "db:migration:list": "supabase migration list",
-
+        "db:types": "supabase gen types typescript --local > src/types/database/database.types.ts",
         "build:apk:dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'BUILD_NUMBER=${APP_BUILD_NUMBER:-200}; export APP_BUILD_NUMBER=$BUILD_NUMBER; expo prebuild --clean --platform android && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./SL-Dev-${BUILD_NUMBER}-v1.0.0.apk'",
         "build:apk:prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'BUILD_NUMBER=${APP_BUILD_NUMBER:-300}; export APP_BUILD_NUMBER=$BUILD_NUMBER; expo prebuild --clean --platform android && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./SL-Prod-${BUILD_NUMBER}-v1.0.0.apk'",
         "env:check": "PACKAGE=$(adb shell dumpsys activity activities | grep 'ResumedActivity:' | sed -E 's/.* u0 ([a-zA-Z0-9._]+)\\/.*/\\1/'); case \"$PACKAGE\" in com.anonymous.shoppinglist.local) ENV=Local;; com.anonymous.shoppinglist.dev) ENV=Dev;; com.anonymous.shoppinglist) ENV=Prod;; *) ENV=Unknown;; esac; echo \"Environment : $ENV\"; echo \"Package     : $PACKAGE\""
