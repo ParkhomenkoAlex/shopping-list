@@ -18,9 +18,9 @@ export default function ListDetailsScreen() {
     const { list, isLoading: isListLoading, error: listError } = useList(id);
 
     const {
-        items,
-        isLoading: isItemsLoading,
-        error: itemsError,
+        listItems,
+        isLoading: isListItemsLoading,
+        error: listItemsError,
         createListItem,
         isCreating,
         createError,
@@ -32,16 +32,18 @@ export default function ListDetailsScreen() {
         deleteError,
     } = useListItems(id);
 
-    const [newItemName, setNewItemName] = useState('');
+    const [newListItemName, setNewListItemName] = useState('');
 
-    const [editingItemId, setEditingItemId] = useState<string | null>(null);
-    const [editingItemName, setEditingItemName] = useState('');
+    const [editingListItemId, setEditingListItemId] = useState<string | null>(
+        null
+    );
+    const [editingListItemName, setEditingListItemName] = useState('');
 
-    const isLoading = isListLoading || isItemsLoading;
-    const error = listError || itemsError;
+    const isLoading = isListLoading || isListItemsLoading;
+    const error = listError || listItemsError;
 
-    const handleCreateItem = async () => {
-        const name = newItemName.trim();
+    const handleCreateListItem = async () => {
+        const name = newListItemName.trim();
 
         if (!name) {
             return;
@@ -49,16 +51,19 @@ export default function ListDetailsScreen() {
 
         try {
             await createListItem(name);
-            setNewItemName('');
+            setNewListItemName('');
         } catch (error) {
             console.error('Failed to create list item:', error);
         }
     };
 
-    const handleToggleItem = async (itemId: string, isCompleted: boolean) => {
+    const handleToggleListItem = async (
+        listItemId: string,
+        isCompleted: boolean
+    ) => {
         try {
             await updateListItem({
-                id: itemId,
+                id: listItemId,
                 updates: {
                     is_completed: !isCompleted,
                 },
@@ -68,22 +73,25 @@ export default function ListDetailsScreen() {
         }
     };
 
-    const handleStartEditing = (itemId: string, itemName: string) => {
-        setEditingItemId(itemId);
-        setEditingItemName(itemName);
+    const handleStartEditingListItem = (
+        listItemId: string,
+        listItemName: string
+    ) => {
+        setEditingListItemId(listItemId);
+        setEditingListItemName(listItemName);
     };
 
-    const handleCancelEditing = () => {
-        setEditingItemId(null);
-        setEditingItemName('');
+    const handleCancelEditingListItem = () => {
+        setEditingListItemId(null);
+        setEditingListItemName('');
     };
 
-    const handleSaveEditing = async () => {
-        if (!editingItemId) {
+    const handleSaveEditingListItem = async () => {
+        if (!editingListItemId) {
             return;
         }
 
-        const name = editingItemName.trim();
+        const name = editingListItemName.trim();
 
         if (!name) {
             return;
@@ -91,22 +99,22 @@ export default function ListDetailsScreen() {
 
         try {
             await updateListItem({
-                id: editingItemId,
+                id: editingListItemId,
                 updates: {
                     name,
                 },
             });
 
-            setEditingItemId(null);
-            setEditingItemName('');
+            setEditingListItemId(null);
+            setEditingListItemName('');
         } catch (error) {
             console.error('Failed to update list item:', error);
         }
     };
 
-    const handleDeleteItem = async (itemId: string) => {
+    const handleDeleteListItem = async (listItemId: string) => {
         try {
-            await deleteListItem(itemId);
+            await deleteListItem(listItemId);
         } catch (error) {
             console.error('Failed to delete list item:', error);
         }
@@ -124,12 +132,12 @@ export default function ListDetailsScreen() {
 
             {!isLoading && !error && (
                 <View style={styles.content}>
-                    <View style={styles.createItem}>
+                    <View style={styles.createListItem}>
                         <TextInput
                             style={styles.input}
-                            value={newItemName}
-                            onChangeText={setNewItemName}
-                            placeholder="Item name"
+                            value={newListItemName}
+                            onChangeText={setNewListItemName}
+                            placeholder="New list item name"
                             editable={!isCreating}
                         />
 
@@ -138,7 +146,7 @@ export default function ListDetailsScreen() {
                                 styles.addButton,
                                 isCreating && styles.disabledButton,
                             ]}
-                            onPress={handleCreateItem}
+                            onPress={handleCreateListItem}
                             disabled={isCreating}
                         >
                             <Text style={styles.addButtonText}>
@@ -161,28 +169,34 @@ export default function ListDetailsScreen() {
                         <Text style={styles.error}>{deleteError.message}</Text>
                     )}
 
-                    <View style={styles.items}>
-                        {items.map((item) => {
-                            const isEditing = editingItemId === item.id;
+                    <View style={styles.listItems}>
+                        {listItems.map((listItem) => {
+                            const isEditing = editingListItemId === listItem.id;
 
                             if (isEditing) {
                                 return (
                                     <View
-                                        key={item.id}
-                                        style={styles.editingItem}
+                                        key={listItem.id}
+                                        style={styles.editingListItem}
                                     >
                                         <TextInput
-                                            style={styles.editInput}
-                                            value={editingItemName}
-                                            onChangeText={setEditingItemName}
+                                            style={styles.editListItemInput}
+                                            value={editingListItemName}
+                                            onChangeText={
+                                                setEditingListItemName
+                                            }
                                             autoFocus
                                             editable={!isUpdating}
                                         />
 
-                                        <View style={styles.editButtons}>
+                                        <View
+                                            style={styles.editListItemButtons}
+                                        >
                                             <Pressable
                                                 style={styles.cancelButton}
-                                                onPress={handleCancelEditing}
+                                                onPress={
+                                                    handleCancelEditingListItem
+                                                }
                                                 disabled={isUpdating}
                                             >
                                                 <Text
@@ -200,7 +214,9 @@ export default function ListDetailsScreen() {
                                                     isUpdating &&
                                                         styles.disabledButton,
                                                 ]}
-                                                onPress={handleSaveEditing}
+                                                onPress={
+                                                    handleSaveEditingListItem
+                                                }
                                                 disabled={isUpdating}
                                             >
                                                 <Text
@@ -219,43 +235,43 @@ export default function ListDetailsScreen() {
                             }
 
                             return (
-                                <View key={item.id} style={styles.item}>
+                                <View key={listItem.id} style={styles.listItem}>
                                     <Pressable
                                         style={[
-                                            styles.itemContent,
+                                            styles.listItemContent,
                                             (isUpdating || isDeleting) &&
-                                                styles.disabledItem,
+                                                styles.disabledListItem,
                                         ]}
                                         onPress={() =>
-                                            handleToggleItem(
-                                                item.id,
-                                                item.is_completed
+                                            handleToggleListItem(
+                                                listItem.id,
+                                                listItem.is_completed
                                             )
                                         }
                                         disabled={isUpdating || isDeleting}
                                     >
                                         <Text style={styles.checkbox}>
-                                            {item.is_completed ? '☑' : '☐'}
+                                            {listItem.is_completed ? '☑' : '☐'}
                                         </Text>
 
                                         <Text
                                             style={[
-                                                styles.itemName,
-                                                item.is_completed &&
-                                                    styles.completedItemName,
+                                                styles.listItemName,
+                                                listItem.is_completed &&
+                                                    styles.completedListItemName,
                                             ]}
                                         >
-                                            {item.name}
+                                            {listItem.name}
                                         </Text>
                                     </Pressable>
 
-                                    <View style={styles.itemActions}>
+                                    <View style={styles.listItemActions}>
                                         <Pressable
                                             style={styles.editButton}
                                             onPress={() =>
-                                                handleStartEditing(
-                                                    item.id,
-                                                    item.name
+                                                handleStartEditingListItem(
+                                                    listItem.id,
+                                                    listItem.name
                                                 )
                                             }
                                             disabled={isUpdating || isDeleting}
@@ -268,7 +284,9 @@ export default function ListDetailsScreen() {
                                         <Pressable
                                             style={styles.deleteButton}
                                             onPress={() =>
-                                                handleDeleteItem(item.id)
+                                                handleDeleteListItem(
+                                                    listItem.id
+                                                )
                                             }
                                             disabled={isDeleting}
                                         >
@@ -283,8 +301,8 @@ export default function ListDetailsScreen() {
                             );
                         })}
 
-                        {items.length === 0 && (
-                            <Text style={styles.empty}>No items yet.</Text>
+                        {listItems.length === 0 && (
+                            <Text style={styles.empty}>No list items yet.</Text>
                         )}
                     </View>
                 </View>
@@ -314,7 +332,7 @@ const styles = StyleSheet.create({
         gap: 24,
     },
 
-    createItem: {
+    createListItem: {
         gap: 12,
     },
 
@@ -344,18 +362,18 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 
-    items: {
+    listItems: {
         gap: 12,
     },
 
-    item: {
+    listItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 12,
     },
 
-    itemContent: {
+    listItemContent: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
@@ -363,7 +381,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
 
-    disabledItem: {
+    disabledListItem: {
         opacity: 0.5,
     },
 
@@ -371,16 +389,16 @@ const styles = StyleSheet.create({
         fontSize: 24,
     },
 
-    itemName: {
+    listItemName: {
         fontSize: 18,
     },
 
-    completedItemName: {
+    completedListItemName: {
         textDecorationLine: 'line-through',
         color: '#888888',
     },
 
-    itemActions: {
+    listItemActions: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
@@ -412,11 +430,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 
-    editingItem: {
+    editingListItem: {
         gap: 12,
     },
 
-    editInput: {
+    editListItemInput: {
         borderWidth: 1,
         borderColor: '#208AEF',
         borderRadius: 8,
@@ -425,7 +443,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
 
-    editButtons: {
+    editListItemButtons: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
         gap: 12,

@@ -11,9 +11,9 @@ export function useListItems(listId: string | undefined) {
     const queryClient = useQueryClient();
 
     const {
-        data: items = [],
-        isLoading,
-        error,
+        data: listItems = [],
+        isLoading: isListItemsLoading,
+        error: listItemsError,
     } = useQuery({
         queryKey: ['list-items', listId],
         queryFn: () => getListItems(listId!),
@@ -57,9 +57,9 @@ export function useListItems(listId: string | undefined) {
     });
 
     return {
-        items,
-        isLoading,
-        error,
+        listItems,
+        isLoading: isListItemsLoading,
+        error: listItemsError,
 
         createListItem: createListItemMutation.mutateAsync,
         isCreating: createListItemMutation.isPending,

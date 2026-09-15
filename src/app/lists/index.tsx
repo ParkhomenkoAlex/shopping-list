@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import { CreateListModal } from '@/components/lists/CreateListModal';
-import { ListItem } from '@/components/lists/ListItem';
+import { ListCard } from '@/components/lists/ListCard';
 import { useLists } from '@/hooks/useLists';
 
 export default function ListsScreen() {
@@ -52,7 +52,7 @@ export default function ListsScreen() {
             {!isLoading &&
                 !error &&
                 lists.map((list) => (
-                    <ListItem
+                    <ListCard
                         key={list.id}
                         list={list}
                         onPress={() =>

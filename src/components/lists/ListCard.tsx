@@ -2,12 +2,12 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import type { List } from '@/types/List';
 
-type ListItemProps = {
+type ListCardProps = {
     list: List;
     onPress: () => void;
 };
 
-export function ListItem({ list, onPress }: ListItemProps) {
+export function ListCard({ list, onPress }: ListCardProps) {
     return (
         <Pressable style={styles.container} onPress={onPress}>
             <Text style={styles.name}>{list.name}</Text>
