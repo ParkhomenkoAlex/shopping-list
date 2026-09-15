@@ -34,6 +34,38 @@ export type Database = {
     };
     public: {
         Tables: {
+            list_items: {
+                Row: {
+                    created_at: string;
+                    id: string;
+                    is_completed: boolean;
+                    list_id: string;
+                    name: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    id?: string;
+                    is_completed?: boolean;
+                    list_id: string;
+                    name: string;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: string;
+                    is_completed?: boolean;
+                    list_id?: string;
+                    name?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'list_items_list_id_fkey';
+                        columns: ['list_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'lists';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             lists: {
                 Row: {
                     created_at: string;
