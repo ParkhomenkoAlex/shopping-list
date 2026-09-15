@@ -1,14 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { CreateListItem } from '@/components/lists/CreateListItem';
+import { EditListItem } from '@/components/lists/EditListItem';
+import { ListItem } from '@/components/lists/ListItem';
 import { useList } from '@/hooks/useList';
 import { useListItems } from '@/hooks/useListItems';
 
@@ -37,6 +33,7 @@ export default function ListDetailsScreen() {
     const [editingListItemId, setEditingListItemId] = useState<string | null>(
         null
     );
+
     const [editingListItemName, setEditingListItemName] = useState('');
 
     const isLoading = isListLoading || isListItemsLoading;
@@ -51,6 +48,7 @@ export default function ListDetailsScreen() {
 
         try {
             await createListItem(name);
+
             setNewListItemName('');
         } catch (error) {
             console.error('Failed to create list item:', error);
@@ -132,34 +130,13 @@ export default function ListDetailsScreen() {
 
             {!isLoading && !error && (
                 <View style={styles.content}>
-                    <View style={styles.createListItem}>
-                        <TextInput
-                            style={styles.input}
-                            value={newListItemName}
-                            onChangeText={setNewListItemName}
-                            placeholder="New list item name"
-                            editable={!isCreating}
-                        />
-
-                        <Pressable
-                            style={[
-                                styles.addButton,
-                                isCreating && styles.disabledButton,
-                            ]}
-                            onPress={handleCreateListItem}
-                            disabled={isCreating}
-                        >
-                            <Text style={styles.addButtonText}>
-                                {isCreating ? 'Adding...' : 'Add'}
-                            </Text>
-                        </Pressable>
-
-                        {createError && (
-                            <Text style={styles.error}>
-                                {createError.message}
-                            </Text>
-                        )}
-                    </View>
+                    <CreateListItem
+                        name={newListItemName}
+                        isCreating={isCreating}
+                        error={createError}
+                        onChangeName={setNewListItemName}
+                        onCreate={handleCreateListItem}
+                    />
 
                     {updateError && (
                         <Text style={styles.error}>{updateError.message}</Text>
@@ -175,129 +152,39 @@ export default function ListDetailsScreen() {
 
                             if (isEditing) {
                                 return (
-                                    <View
+                                    <EditListItem
                                         key={listItem.id}
-                                        style={styles.editingListItem}
-                                    >
-                                        <TextInput
-                                            style={styles.editListItemInput}
-                                            value={editingListItemName}
-                                            onChangeText={
-                                                setEditingListItemName
-                                            }
-                                            autoFocus
-                                            editable={!isUpdating}
-                                        />
-
-                                        <View
-                                            style={styles.editListItemButtons}
-                                        >
-                                            <Pressable
-                                                style={styles.cancelButton}
-                                                onPress={
-                                                    handleCancelEditingListItem
-                                                }
-                                                disabled={isUpdating}
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.cancelButtonText
-                                                    }
-                                                >
-                                                    Cancel
-                                                </Text>
-                                            </Pressable>
-
-                                            <Pressable
-                                                style={[
-                                                    styles.saveButton,
-                                                    isUpdating &&
-                                                        styles.disabledButton,
-                                                ]}
-                                                onPress={
-                                                    handleSaveEditingListItem
-                                                }
-                                                disabled={isUpdating}
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.saveButtonText
-                                                    }
-                                                >
-                                                    {isUpdating
-                                                        ? 'Saving...'
-                                                        : 'Save'}
-                                                </Text>
-                                            </Pressable>
-                                        </View>
-                                    </View>
+                                        name={editingListItemName}
+                                        isUpdating={isUpdating}
+                                        onChangeName={setEditingListItemName}
+                                        onCancel={handleCancelEditingListItem}
+                                        onSave={handleSaveEditingListItem}
+                                    />
                                 );
                             }
 
                             return (
-                                <View key={listItem.id} style={styles.listItem}>
-                                    <Pressable
-                                        style={[
-                                            styles.listItemContent,
-                                            (isUpdating || isDeleting) &&
-                                                styles.disabledListItem,
-                                        ]}
-                                        onPress={() =>
-                                            handleToggleListItem(
-                                                listItem.id,
-                                                listItem.is_completed
-                                            )
-                                        }
-                                        disabled={isUpdating || isDeleting}
-                                    >
-                                        <Text style={styles.checkbox}>
-                                            {listItem.is_completed ? '☑' : '☐'}
-                                        </Text>
-
-                                        <Text
-                                            style={[
-                                                styles.listItemName,
-                                                listItem.is_completed &&
-                                                    styles.completedListItemName,
-                                            ]}
-                                        >
-                                            {listItem.name}
-                                        </Text>
-                                    </Pressable>
-
-                                    <View style={styles.listItemActions}>
-                                        <Pressable
-                                            style={styles.editButton}
-                                            onPress={() =>
-                                                handleStartEditingListItem(
-                                                    listItem.id,
-                                                    listItem.name
-                                                )
-                                            }
-                                            disabled={isUpdating || isDeleting}
-                                        >
-                                            <Text style={styles.editButtonText}>
-                                                Edit
-                                            </Text>
-                                        </Pressable>
-
-                                        <Pressable
-                                            style={styles.deleteButton}
-                                            onPress={() =>
-                                                handleDeleteListItem(
-                                                    listItem.id
-                                                )
-                                            }
-                                            disabled={isDeleting}
-                                        >
-                                            <Text
-                                                style={styles.deleteButtonText}
-                                            >
-                                                Delete
-                                            </Text>
-                                        </Pressable>
-                                    </View>
-                                </View>
+                                <ListItem
+                                    key={listItem.id}
+                                    listItem={listItem}
+                                    isUpdating={isUpdating}
+                                    isDeleting={isDeleting}
+                                    onToggle={() =>
+                                        handleToggleListItem(
+                                            listItem.id,
+                                            listItem.is_completed
+                                        )
+                                    }
+                                    onEdit={() =>
+                                        handleStartEditingListItem(
+                                            listItem.id,
+                                            listItem.name
+                                        )
+                                    }
+                                    onDelete={() =>
+                                        handleDeleteListItem(listItem.id)
+                                    }
+                                />
                             );
                         })}
 
@@ -332,143 +219,8 @@ const styles = StyleSheet.create({
         gap: 24,
     },
 
-    createListItem: {
-        gap: 12,
-    },
-
-    input: {
-        borderWidth: 1,
-        borderColor: '#DDD',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 16,
-    },
-
-    addButton: {
-        paddingVertical: 12,
-        borderRadius: 8,
-        backgroundColor: '#208AEF',
-        alignItems: 'center',
-    },
-
-    disabledButton: {
-        opacity: 0.5,
-    },
-
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-
     listItems: {
         gap: 12,
-    },
-
-    listItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-    },
-
-    listItemContent: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        paddingVertical: 8,
-    },
-
-    disabledListItem: {
-        opacity: 0.5,
-    },
-
-    checkbox: {
-        fontSize: 24,
-    },
-
-    listItemName: {
-        fontSize: 18,
-    },
-
-    completedListItemName: {
-        textDecorationLine: 'line-through',
-        color: '#888888',
-    },
-
-    listItemActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-
-    editButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#666666',
-    },
-
-    editButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    deleteButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#D32F2F',
-    },
-
-    deleteButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    editingListItem: {
-        gap: 12,
-    },
-
-    editListItemInput: {
-        borderWidth: 1,
-        borderColor: '#208AEF',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 18,
-    },
-
-    editListItemButtons: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: 12,
-    },
-
-    cancelButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-    },
-
-    cancelButtonText: {
-        fontSize: 16,
-    },
-
-    saveButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 8,
-        backgroundColor: '#208AEF',
-    },
-
-    saveButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
     },
 
     error: {
