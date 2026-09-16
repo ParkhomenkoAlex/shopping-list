@@ -7,30 +7,30 @@ import {
     View,
 } from 'react-native';
 
-import type { CreateListForm } from '@/types/CreateListForm';
+type EditListForm = {
+    name: string;
+    description: string;
+};
 
-type CreateListModalProps = {
+type EditListModalProps = {
     visible: boolean;
-    form: CreateListForm;
-    isCreating: boolean;
+    form: EditListForm;
+    isUpdating: boolean;
     error: Error | null;
-    onChange: <K extends keyof CreateListForm>(
-        field: K,
-        value: CreateListForm[K]
-    ) => void;
+    onChange: (field: keyof EditListForm, value: string) => void;
     onCancel: () => void;
     onSubmit: () => void | Promise<void>;
 };
 
-export function CreateListModal({
+export function EditListModal({
     visible,
     form,
-    isCreating,
+    isUpdating,
     error,
     onChange,
     onCancel,
     onSubmit,
-}: CreateListModalProps) {
+}: EditListModalProps) {
     return (
         <Modal
             visible={visible}
@@ -40,26 +40,24 @@ export function CreateListModal({
         >
             <View style={styles.overlay}>
                 <View style={styles.modal}>
-                    <Text style={styles.title}>New list</Text>
+                    <Text style={styles.title}>Edit list</Text>
 
                     <TextInput
                         style={styles.input}
                         value={form.name}
-                        onChangeText={(name) => onChange('name', name)}
+                        onChangeText={(value) => onChange('name', value)}
                         placeholder="List name"
+                        editable={!isUpdating}
                         autoFocus
-                        editable={!isCreating}
                     />
 
                     <TextInput
                         style={[styles.input, styles.descriptionInput]}
                         value={form.description}
-                        onChangeText={(description) =>
-                            onChange('description', description)
-                        }
+                        onChangeText={(value) => onChange('description', value)}
                         placeholder="Description"
                         multiline
-                        editable={!isCreating}
+                        editable={!isUpdating}
                     />
 
                     {error && <Text style={styles.error}>{error.message}</Text>}
@@ -68,21 +66,21 @@ export function CreateListModal({
                         <Pressable
                             style={styles.cancelButton}
                             onPress={onCancel}
-                            disabled={isCreating}
+                            disabled={isUpdating}
                         >
                             <Text style={styles.cancelButtonText}>Cancel</Text>
                         </Pressable>
 
                         <Pressable
                             style={[
-                                styles.createButton,
-                                isCreating && styles.disabledButton,
+                                styles.saveButton,
+                                isUpdating && styles.disabledButton,
                             ]}
                             onPress={onSubmit}
-                            disabled={isCreating}
+                            disabled={isUpdating}
                         >
-                            <Text style={styles.createButtonText}>
-                                {isCreating ? 'Creating...' : 'Create'}
+                            <Text style={styles.saveButtonText}>
+                                {isUpdating ? 'Saving...' : 'Save'}
                             </Text>
                         </Pressable>
                     </View>
@@ -119,17 +117,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 16,
+        marginBottom: 12,
     },
 
     descriptionInput: {
-        minHeight: 100,
-        marginTop: 12,
+        minHeight: 80,
         textAlignVertical: 'top',
     },
 
     error: {
         color: '#D32F2F',
-        marginTop: 8,
+        marginTop: 4,
     },
 
     buttons: {
@@ -148,7 +146,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
 
-    createButton: {
+    saveButton: {
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 8,
@@ -159,7 +157,7 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
 
-    createButtonText: {
+    saveButtonText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '600',

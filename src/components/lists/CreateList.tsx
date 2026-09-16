@@ -2,25 +2,49 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { CreateListModal } from '@/components/lists/CreateListModal';
-import { useLists } from '@/hooks/useLists';
+import { useList } from '@/hooks/useList';
+import type { CreateListForm } from '@/types/CreateListForm';
+
+const initialForm: CreateListForm = {
+    name: '',
+    description: '',
+};
 
 export function CreateList() {
-    const { isCreating, createError, createList } = useLists();
+    const { isCreating, createError, createList } = useList();
 
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [newListName, setNewListName] = useState('');
+    const [form, setForm] = useState<CreateListForm>(initialForm);
+
+    const handleChange = <K extends keyof CreateListForm>(
+        field: K,
+        value: CreateListForm[K]
+    ) => {
+        setForm((currentForm) => ({
+            ...currentForm,
+            [field]: value,
+        }));
+    };
+
+    const handleOpenModal = () => {
+        setIsModalVisible(true);
+    };
 
     const handleCreateList = async () => {
-        const name = newListName.trim();
+        const name = form.name.trim();
+        const description = form.description.trim();
 
         if (!name) {
             return;
         }
 
         try {
-            await createList(name);
+            await createList({
+                name,
+                description: description || null,
+            });
 
-            setNewListName('');
+            setForm(initialForm);
             setIsModalVisible(false);
         } catch (error) {
             console.error('Failed to create list:', error);
@@ -28,7 +52,7 @@ export function CreateList() {
     };
 
     const handleCancelCreateList = () => {
-        setNewListName('');
+        setForm(initialForm);
         setIsModalVisible(false);
     };
 
@@ -36,7 +60,7 @@ export function CreateList() {
         <>
             <Pressable
                 style={styles.addButton}
-                onPress={() => setIsModalVisible(true)}
+                onPress={handleOpenModal}
                 disabled={isCreating}
             >
                 <Text style={styles.addButtonText}>
@@ -46,12 +70,12 @@ export function CreateList() {
 
             <CreateListModal
                 visible={isModalVisible}
-                name={newListName}
-                onChangeName={setNewListName}
-                onCancel={handleCancelCreateList}
-                onCreate={handleCreateList}
+                form={form}
                 isCreating={isCreating}
                 error={createError}
+                onChange={handleChange}
+                onCancel={handleCancelCreateList}
+                onSubmit={handleCreateList}
             />
         </>
     );
