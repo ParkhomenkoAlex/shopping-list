@@ -1,17 +1,45 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 import { CreateListItem } from '@/components/lists/CreateListItem';
 import { EditListItem } from '@/components/lists/EditListItem';
+import { EditListModal } from '@/components/lists/EditListModal';
 import { ListItem } from '@/components/lists/ListItem';
 import { useList } from '@/hooks/useList';
 import { useListItems } from '@/hooks/useListItems';
 
+type EditListForm = {
+    name: string;
+    description: string;
+};
+
+const initialForm: EditListForm = {
+    name: '',
+    description: '',
+};
+
 export default function ListDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
 
-    const { list, isLoading: isListLoading, error: listError } = useList(id);
+    const {
+        list,
+        isListLoading,
+        listError,
+        updateList,
+        isUpdating,
+        updateError,
+        deleteList,
+        isDeleting: isListDeleting,
+        deleteError: deleteListError,
+    } = useList(id);
 
     const {
         listItems,
@@ -21,11 +49,11 @@ export default function ListDetailsScreen() {
         isCreating,
         createError,
         updateListItem,
-        isUpdating,
-        updateError,
+        isUpdating: isListItemUpdating,
+        updateError: updateListItemError,
         deleteListItem,
-        isDeleting,
-        deleteError,
+        isDeleting: isListItemDeleting,
+        deleteError: deleteListItemError,
     } = useListItems(id);
 
     const [newListItemName, setNewListItemName] = useState('');
@@ -35,6 +63,10 @@ export default function ListDetailsScreen() {
     );
 
     const [editingListItemName, setEditingListItemName] = useState('');
+
+    const [isEditListModalVisible, setIsEditListModalVisible] = useState(false);
+
+    const [editListForm, setEditListForm] = useState<EditListForm>(initialForm);
 
     const isLoading = isListLoading || isListItemsLoading;
     const error = listError || listItemsError;
@@ -110,12 +142,103 @@ export default function ListDetailsScreen() {
         }
     };
 
-    const handleDeleteListItem = async (listItemId: string) => {
-        try {
-            await deleteListItem(listItemId);
-        } catch (error) {
-            console.error('Failed to delete list item:', error);
+    const handleDeleteListItem = (listItemId: string, listItemName: string) => {
+        Alert.alert(
+            'Delete item',
+            `Are you sure you want to delete "${listItemName}"?`,
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteListItem(listItemId);
+                        } catch (error) {
+                            console.error('Failed to delete list item:', error);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleOpenEditListModal = () => {
+        if (!list) {
+            return;
         }
+
+        setEditListForm({
+            name: list.name,
+            description: list.description ?? '',
+        });
+
+        setIsEditListModalVisible(true);
+    };
+
+    const handleChangeEditListForm = (
+        field: keyof EditListForm,
+        value: string
+    ) => {
+        setEditListForm((currentForm) => ({
+            ...currentForm,
+            [field]: value,
+        }));
+    };
+
+    const handleCancelEditList = () => {
+        setEditListForm(initialForm);
+        setIsEditListModalVisible(false);
+    };
+
+    const handleSaveEditList = async () => {
+        const name = editListForm.name.trim();
+        const description = editListForm.description.trim();
+
+        if (!name) {
+            return;
+        }
+
+        try {
+            await updateList({
+                name,
+                description: description || null,
+            });
+
+            setEditListForm(initialForm);
+            setIsEditListModalVisible(false);
+        } catch (error) {
+            console.error('Failed to update list:', error);
+        }
+    };
+
+    const handleDeleteList = () => {
+        Alert.alert(
+            'Delete list',
+            'Are you sure you want to delete this list?',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteList();
+
+                            router.replace('/lists');
+                        } catch (error) {
+                            console.error('Failed to delete list:', error);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     return (
@@ -126,7 +249,56 @@ export default function ListDetailsScreen() {
 
             {error && <Text style={styles.error}>{error.message}</Text>}
 
-            {list && <Text style={styles.listName}>{list.name}</Text>}
+            {list && (
+                <View style={styles.listInfo}>
+                    <View style={styles.listHeader}>
+                        <View style={styles.listText}>
+                            <Text style={styles.listName}>{list.name}</Text>
+
+                            {list.description && (
+                                <Text style={styles.listDescription}>
+                                    {list.description}
+                                </Text>
+                            )}
+                        </View>
+
+                        <View style={styles.listActions}>
+                            <Pressable
+                                style={[
+                                    styles.editListButton,
+                                    (isUpdating || isListDeleting) &&
+                                        styles.disabledButton,
+                                ]}
+                                onPress={handleOpenEditListModal}
+                                disabled={isUpdating || isListDeleting}
+                            >
+                                <Text style={styles.editListButtonText}>
+                                    Edit
+                                </Text>
+                            </Pressable>
+
+                            <Pressable
+                                style={[
+                                    styles.deleteListButton,
+                                    isListDeleting && styles.disabledButton,
+                                ]}
+                                onPress={handleDeleteList}
+                                disabled={isListDeleting}
+                            >
+                                <Text style={styles.deleteListButtonText}>
+                                    {isListDeleting ? 'Deleting...' : 'Delete'}
+                                </Text>
+                            </Pressable>
+                        </View>
+                    </View>
+
+                    {deleteListError && (
+                        <Text style={styles.error}>
+                            {deleteListError.message}
+                        </Text>
+                    )}
+                </View>
+            )}
 
             {!isLoading && !error && (
                 <View style={styles.content}>
@@ -138,12 +310,16 @@ export default function ListDetailsScreen() {
                         onCreate={handleCreateListItem}
                     />
 
-                    {updateError && (
-                        <Text style={styles.error}>{updateError.message}</Text>
+                    {updateListItemError && (
+                        <Text style={styles.error}>
+                            {updateListItemError.message}
+                        </Text>
                     )}
 
-                    {deleteError && (
-                        <Text style={styles.error}>{deleteError.message}</Text>
+                    {deleteListItemError && (
+                        <Text style={styles.error}>
+                            {deleteListItemError.message}
+                        </Text>
                     )}
 
                     <View style={styles.listItems}>
@@ -155,7 +331,7 @@ export default function ListDetailsScreen() {
                                     <EditListItem
                                         key={listItem.id}
                                         name={editingListItemName}
-                                        isUpdating={isUpdating}
+                                        isUpdating={isListItemUpdating}
                                         onChangeName={setEditingListItemName}
                                         onCancel={handleCancelEditingListItem}
                                         onSave={handleSaveEditingListItem}
@@ -167,8 +343,8 @@ export default function ListDetailsScreen() {
                                 <ListItem
                                     key={listItem.id}
                                     listItem={listItem}
-                                    isUpdating={isUpdating}
-                                    isDeleting={isDeleting}
+                                    isUpdating={isListItemUpdating}
+                                    isDeleting={isListItemDeleting}
                                     onToggle={() =>
                                         handleToggleListItem(
                                             listItem.id,
@@ -182,7 +358,10 @@ export default function ListDetailsScreen() {
                                         )
                                     }
                                     onDelete={() =>
-                                        handleDeleteListItem(listItem.id)
+                                        handleDeleteListItem(
+                                            listItem.id,
+                                            listItem.name
+                                        )
                                     }
                                 />
                             );
@@ -194,6 +373,16 @@ export default function ListDetailsScreen() {
                     </View>
                 </View>
             )}
+
+            <EditListModal
+                visible={isEditListModalVisible}
+                form={editListForm}
+                isUpdating={isUpdating}
+                error={updateError}
+                onChange={handleChangeEditListForm}
+                onCancel={handleCancelEditList}
+                onSubmit={handleSaveEditList}
+            />
         </View>
     );
 }
@@ -210,13 +399,70 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
 
+    listInfo: {
+        gap: 8,
+    },
+
+    listHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 16,
+    },
+
+    listText: {
+        flex: 1,
+        gap: 8,
+    },
+
     listName: {
         fontSize: 22,
-        marginBottom: 24,
+    },
+
+    listDescription: {
+        fontSize: 16,
+        color: '#666666',
+    },
+
+    listActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+
+    editListButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        backgroundColor: '#666666',
+    },
+
+    editListButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+
+    deleteListButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        backgroundColor: '#D32F2F',
+    },
+
+    deleteListButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+
+    disabledButton: {
+        opacity: 0.5,
     },
 
     content: {
         gap: 24,
+        marginTop: 24,
     },
 
     listItems: {

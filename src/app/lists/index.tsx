@@ -3,21 +3,23 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { CreateList } from '@/components/lists/CreateList';
 import { ListCard } from '@/components/lists/ListCard';
-import { useLists } from '@/hooks/useLists';
+import { useList } from '@/hooks/useList';
 
 export default function ListsScreen() {
-    const { lists, isLoading, error } = useLists();
+    const { lists, isListsLoading, listsError } = useList();
 
     return (
         <View style={styles.container}>
             <Text style={styles.title}>My Lists</Text>
 
-            {isLoading && <ActivityIndicator />}
+            {isListsLoading && <ActivityIndicator />}
 
-            {error && <Text style={styles.error}>{error.message}</Text>}
+            {listsError && (
+                <Text style={styles.error}>{listsError.message}</Text>
+            )}
 
-            {!isLoading &&
-                !error &&
+            {!isListsLoading &&
+                !listsError &&
                 lists.map((list) => (
                     <ListCard
                         key={list.id}
@@ -33,7 +35,7 @@ export default function ListsScreen() {
                     />
                 ))}
 
-            {!isLoading && !error && lists.length === 0 && (
+            {!isListsLoading && !listsError && lists.length === 0 && (
                 <Text style={styles.empty}>No lists yet.</Text>
             )}
 
