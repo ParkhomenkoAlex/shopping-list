@@ -7,17 +7,14 @@ import {
     View,
 } from 'react-native';
 
-import type { CreateListForm } from '@/types/CreateListForm';
+import type { ListForm } from '@/types/ListForm';
 
 type CreateListModalProps = {
     visible: boolean;
-    form: CreateListForm;
+    form: ListForm;
     isCreating: boolean;
     error: Error | null;
-    onChange: <K extends keyof CreateListForm>(
-        field: K,
-        value: CreateListForm[K]
-    ) => void;
+    onChange: <K extends keyof ListForm>(field: K, value: ListForm[K]) => void;
     onCancel: () => void;
     onSubmit: () => void | Promise<void>;
 };

@@ -15,16 +15,7 @@ import { EditListModal } from '@/components/lists/EditListModal';
 import { ListItem } from '@/components/lists/ListItem';
 import { useList } from '@/hooks/useList';
 import { useListItems } from '@/hooks/useListItems';
-
-type EditListForm = {
-    name: string;
-    description: string;
-};
-
-const initialForm: EditListForm = {
-    name: '',
-    description: '',
-};
+import { initialListForm, type ListForm } from '@/types/ListForm';
 
 export default function ListDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -66,7 +57,7 @@ export default function ListDetailsScreen() {
 
     const [isEditListModalVisible, setIsEditListModalVisible] = useState(false);
 
-    const [editListForm, setEditListForm] = useState<EditListForm>(initialForm);
+    const [editListForm, setEditListForm] = useState<ListForm>(initialListForm);
 
     const isLoading = isListLoading || isListItemsLoading;
     const error = listError || listItemsError;
@@ -179,10 +170,7 @@ export default function ListDetailsScreen() {
         setIsEditListModalVisible(true);
     };
 
-    const handleChangeEditListForm = (
-        field: keyof EditListForm,
-        value: string
-    ) => {
+    const handleChangeEditListForm = (field: keyof ListForm, value: string) => {
         setEditListForm((currentForm) => ({
             ...currentForm,
             [field]: value,
@@ -190,7 +178,7 @@ export default function ListDetailsScreen() {
     };
 
     const handleCancelEditList = () => {
-        setEditListForm(initialForm);
+        setEditListForm(initialListForm);
         setIsEditListModalVisible(false);
     };
 
@@ -208,7 +196,7 @@ export default function ListDetailsScreen() {
                 description: description || null,
             });
 
-            setEditListForm(initialForm);
+            setEditListForm(initialListForm);
             setIsEditListModalVisible(false);
         } catch (error) {
             console.error('Failed to update list:', error);

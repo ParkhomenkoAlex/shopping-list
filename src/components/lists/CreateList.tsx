@@ -3,22 +3,17 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { CreateListModal } from '@/components/lists/CreateListModal';
 import { useList } from '@/hooks/useList';
-import type { CreateListForm } from '@/types/CreateListForm';
-
-const initialForm: CreateListForm = {
-    name: '',
-    description: '',
-};
+import { initialListForm, type ListForm } from '@/types/ListForm';
 
 export function CreateList() {
     const { isCreating, createError, createList } = useList();
 
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [form, setForm] = useState<CreateListForm>(initialForm);
+    const [form, setForm] = useState<ListForm>(initialListForm);
 
-    const handleChange = <K extends keyof CreateListForm>(
+    const handleChange = <K extends keyof ListForm>(
         field: K,
-        value: CreateListForm[K]
+        value: ListForm[K]
     ) => {
         setForm((currentForm) => ({
             ...currentForm,
@@ -44,7 +39,7 @@ export function CreateList() {
                 description: description || null,
             });
 
-            setForm(initialForm);
+            setForm(initialListForm);
             setIsModalVisible(false);
         } catch (error) {
             console.error('Failed to create list:', error);
@@ -52,7 +47,7 @@ export function CreateList() {
     };
 
     const handleCancelCreateList = () => {
-        setForm(initialForm);
+        setForm(initialListForm);
         setIsModalVisible(false);
     };
 
