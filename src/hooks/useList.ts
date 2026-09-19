@@ -6,7 +6,7 @@ import {
     getListById,
     getLists,
     updateList,
-} from '@/services/ListsService';
+} from '@/services/ListService';
 
 export function useList(id?: string) {
     const queryClient = useQueryClient();

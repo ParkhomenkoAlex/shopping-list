@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { ListItem as ListItemType } from '@/services/ListItemsService';
+import type { ListItem as ListItemType } from '@/services/ListItemService';
 
 type ListItemProps = {
     listItem: ListItemType;

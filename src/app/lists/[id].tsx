@@ -8,10 +8,10 @@ import {
     View,
 } from 'react-native';
 
-import { CreateListItem } from '@/components/lists/CreateListItem';
-import { EditListItem } from '@/components/lists/EditListItem';
+import { CreateListItem } from '@/components/items/CreateListItem';
+import { EditListItem } from '@/components/items/EditListItem';
 import { EditListModal } from '@/components/lists/EditListModal';
-import { ListItem } from '@/components/lists/ListItem';
+import { ListItem } from '@/components/items/ListItem';
 import { useList } from '@/hooks/useList';
 import { useListItems } from '@/hooks/useListItems';
 import { confirmAction } from '@/utils/confirmation';

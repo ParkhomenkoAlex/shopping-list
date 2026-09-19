@@ -5,7 +5,7 @@ import {
     deleteListItem,
     getListItems,
     updateListItem,
-} from '@/services/ListItemsService';
+} from '@/services/ListItemService';
 
 export function useListItems(listId: string | undefined) {
     const queryClient = useQueryClient();
