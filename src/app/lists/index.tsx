@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { CreateList } from '@/components/lists/CreateList';
 import { ListCard } from '@/components/lists/ListCard';
@@ -9,7 +9,7 @@ export default function ListsScreen() {
     const { lists, isListsLoading, listsError } = useList();
 
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>My Lists</Text>
 
             {isListsLoading && <ActivityIndicator />}
@@ -40,13 +40,13 @@ export default function ListsScreen() {
             )}
 
             <CreateList />
-        </View>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         padding: 24,
     },
 
