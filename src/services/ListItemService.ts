@@ -5,8 +5,6 @@ import type { Tables } from '@/types/database/database.types';
 
 export type ListItem = Tables<'list_items'>;
 
-// TODO: Revisit the update architecture during the planned refactoring.
-// We currently use the generated Supabase Update type directly here.
 export type ListItemUpdate =
     Database['public']['Tables']['list_items']['Update'];
 
