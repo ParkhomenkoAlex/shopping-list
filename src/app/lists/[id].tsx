@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Pressable,
     StyleSheet,
     Text,
@@ -15,16 +14,8 @@ import { EditListModal } from '@/components/lists/EditListModal';
 import { ListItem } from '@/components/lists/ListItem';
 import { useList } from '@/hooks/useList';
 import { useListItems } from '@/hooks/useListItems';
-
-type EditListForm = {
-    name: string;
-    description: string;
-};
-
-const initialForm: EditListForm = {
-    name: '',
-    description: '',
-};
+import { confirmAction } from '@/utils/confirmation';
+import { initialListForm, type ListForm } from '@/types/ListForm';
 
 export default function ListDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -66,7 +57,7 @@ export default function ListDetailsScreen() {
 
     const [isEditListModalVisible, setIsEditListModalVisible] = useState(false);
 
-    const [editListForm, setEditListForm] = useState<EditListForm>(initialForm);
+    const [editListForm, setEditListForm] = useState<ListForm>(initialListForm);
 
     const isLoading = isListLoading || isListItemsLoading;
     const error = listError || listItemsError;
@@ -143,27 +134,18 @@ export default function ListDetailsScreen() {
     };
 
     const handleDeleteListItem = (listItemId: string, listItemName: string) => {
-        Alert.alert(
-            'Delete item',
-            `Are you sure you want to delete "${listItemName}"?`,
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteListItem(listItemId);
-                        } catch (error) {
-                            console.error('Failed to delete list item:', error);
-                        }
-                    },
-                },
-            ]
-        );
+        confirmAction({
+            title: 'Delete item',
+            message: `Are you sure you want to delete "${listItemName}"?`,
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                try {
+                    await deleteListItem(listItemId);
+                } catch (error) {
+                    console.error('Failed to delete list item:', error);
+                }
+            },
+        });
     };
 
     const handleOpenEditListModal = () => {
@@ -179,10 +161,7 @@ export default function ListDetailsScreen() {
         setIsEditListModalVisible(true);
     };
 
-    const handleChangeEditListForm = (
-        field: keyof EditListForm,
-        value: string
-    ) => {
+    const handleChangeEditListForm = (field: keyof ListForm, value: string) => {
         setEditListForm((currentForm) => ({
             ...currentForm,
             [field]: value,
@@ -190,7 +169,7 @@ export default function ListDetailsScreen() {
     };
 
     const handleCancelEditList = () => {
-        setEditListForm(initialForm);
+        setEditListForm(initialListForm);
         setIsEditListModalVisible(false);
     };
 
@@ -208,7 +187,7 @@ export default function ListDetailsScreen() {
                 description: description || null,
             });
 
-            setEditListForm(initialForm);
+            setEditListForm(initialListForm);
             setIsEditListModalVisible(false);
         } catch (error) {
             console.error('Failed to update list:', error);
@@ -216,29 +195,20 @@ export default function ListDetailsScreen() {
     };
 
     const handleDeleteList = () => {
-        Alert.alert(
-            'Delete list',
-            'Are you sure you want to delete this list?',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteList();
+        confirmAction({
+            title: 'Delete list',
+            message: 'Are you sure you want to delete this list?',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                try {
+                    await deleteList();
 
-                            router.replace('/lists');
-                        } catch (error) {
-                            console.error('Failed to delete list:', error);
-                        }
-                    },
-                },
-            ]
-        );
+                    router.replace('/lists');
+                } catch (error) {
+                    console.error('Failed to delete list:', error);
+                }
+            },
+        });
     };
 
     return (
