@@ -66,6 +66,35 @@ export type Database = {
                     },
                 ];
             };
+            list_members: {
+                Row: {
+                    created_at: string;
+                    list_id: string;
+                    role: Database['public']['Enums']['list_member_role'];
+                    user_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    list_id: string;
+                    role: Database['public']['Enums']['list_member_role'];
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    list_id?: string;
+                    role?: Database['public']['Enums']['list_member_role'];
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'list_members_list_id_fkey';
+                        columns: ['list_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'lists';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             lists: {
                 Row: {
                     created_at: string;
@@ -95,7 +124,7 @@ export type Database = {
             [_ in never]: never;
         };
         Enums: {
-            [_ in never]: never;
+            list_member_role: 'owner' | 'member';
         };
         CompositeTypes: {
             [_ in never]: never;
@@ -228,6 +257,8 @@ export const Constants = {
         Enums: {},
     },
     public: {
-        Enums: {},
+        Enums: {
+            list_member_role: ['owner', 'member'],
+        },
     },
 } as const;
