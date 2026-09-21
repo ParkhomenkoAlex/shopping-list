@@ -1,3 +1,6 @@
+import { AppState, Platform } from 'react-native';
+import 'react-native-url-polyfill/auto';
+import 'expo-sqlite/localStorage/install';
 import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 
@@ -24,5 +27,23 @@ if (!supabasePublishableKey) {
 
 export const supabase = createClient<Database>(
     supabaseUrl,
-    supabasePublishableKey
+    supabasePublishableKey,
+    {
+        auth: {
+            storage: localStorage,
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: false,
+        },
+    }
 );
+
+if (Platform.OS !== 'web') {
+    AppState.addEventListener('change', (state) => {
+        if (state === 'active') {
+            supabase.auth.startAutoRefresh();
+        } else {
+            supabase.auth.stopAutoRefresh();
+        }
+    });
+}

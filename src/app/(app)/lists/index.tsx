@@ -1,12 +1,28 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from 'react-native';
+import {
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+} from 'react-native';
 
 import { CreateList } from '@/components/lists/CreateList';
 import { ListCard } from '@/components/lists/ListCard';
 import { useList } from '@/hooks/useList';
+import { useAuth } from '@/providers/AuthProvider';
 
 export default function ListsScreen() {
     const { lists, isListsLoading, listsError } = useList();
+    const { signOut } = useAuth();
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+        } catch (error) {
+            console.error('Failed to sign out:', error);
+        }
+    };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -40,6 +56,10 @@ export default function ListsScreen() {
             )}
 
             <CreateList />
+
+            <Pressable style={styles.logoutButton} onPress={handleSignOut}>
+                <Text style={styles.logoutButtonText}>Log out</Text>
+            </Pressable>
         </ScrollView>
     );
 }
@@ -64,5 +84,21 @@ const styles = StyleSheet.create({
     empty: {
         color: '#666666',
         marginBottom: 16,
+    },
+
+    logoutButton: {
+        marginTop: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#D32F2F',
+        alignItems: 'center',
+    },
+
+    logoutButtonText: {
+        color: '#D32F2F',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
