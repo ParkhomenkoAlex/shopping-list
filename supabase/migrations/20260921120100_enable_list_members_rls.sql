@@ -1,22 +1,6 @@
-do $$
-begin
-    if exists (
-        select 1
-        from public.lists as list
-        where not exists (
-            select 1
-            from public.list_members as membership
-            where membership.list_id = list.id
-              and membership.role = 'owner'::public.list_member_role
-        )
-    ) then
-        raise exception using
-            message = 'Cannot enable list RLS while lists are missing an owner membership',
-            detail = 'Run the explicit list-members backfill with verified list_id to user_id mappings first.',
-            hint = 'Use supabase/scripts/preflight_list_members.sql to identify lists without owners.';
-    end if;
-end;
-$$;
+-- Legacy lists can exist without memberships when their historical owner is
+-- unknown. They remain stored, but RLS denies ordinary users all access until
+-- a separate, verified owner backfill creates a membership.
 
 revoke all on table public.lists from anon;
 revoke all on table public.list_members from anon;
