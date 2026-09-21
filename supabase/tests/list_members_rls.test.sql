@@ -4,7 +4,7 @@ begin;
 
 set local search_path = extensions, public, auth;
 
-select plan(29);
+select plan(34);
 
 insert into auth.users (
     id,
@@ -37,6 +37,30 @@ values
         now(),
         now()
     );
+
+alter table public.lists disable trigger create_list_owner_membership;
+
+insert into public.lists (id, name)
+values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Legacy list');
+
+insert into public.list_items (id, list_id, name)
+values (
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    'Legacy item'
+);
+
+alter table public.lists enable trigger create_list_owner_membership;
+
+select is(
+    (
+        select count(*)
+        from public.list_members
+        where list_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
+    ),
+    0::bigint,
+    'legacy list can exist without a membership'
+);
 
 select set_config(
     'request.jwt.claim.sub',
@@ -159,6 +183,55 @@ select is(
     0::bigint,
     'outsider cannot read list items'
 );
+
+select is(
+    (select count(*) from public.lists where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'),
+    0::bigint,
+    'authenticated user without membership cannot read a legacy list'
+);
+
+select is(
+    (select count(*) from public.list_items where list_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'),
+    0::bigint,
+    'authenticated user without membership cannot read legacy list items'
+);
+
+update public.lists
+set name = 'Unauthorized legacy update'
+where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+
+reset role;
+
+select is(
+    (select name from public.lists where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'),
+    'Legacy list',
+    'authenticated user without membership cannot update a legacy list'
+);
+
+select set_config(
+    'request.jwt.claim.sub',
+    '22222222-2222-2222-2222-222222222222',
+    true
+);
+set local role authenticated;
+
+delete from public.lists
+where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+
+reset role;
+
+select is(
+    (select count(*) from public.lists where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'),
+    1::bigint,
+    'authenticated user without membership cannot delete a legacy list'
+);
+
+select set_config(
+    'request.jwt.claim.sub',
+    '22222222-2222-2222-2222-222222222222',
+    true
+);
+set local role authenticated;
 
 select throws_ok(
     $$
