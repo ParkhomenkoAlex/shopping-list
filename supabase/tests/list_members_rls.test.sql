@@ -4,7 +4,7 @@ begin;
 
 set local search_path = extensions, public, auth;
 
-select plan(34);
+select plan(36);
 
 insert into auth.users (
     id,
@@ -69,16 +69,16 @@ select set_config(
 );
 set local role authenticated;
 
-insert into public.lists (id, name)
-values
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'List A'),
-    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'List B');
-
-select is(
-    (select count(*) from public.lists where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
-    1::bigint,
-    'authenticated user can create a list'
+select lives_ok(
+    $$
+        insert into public.lists (id, name)
+        values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'List A')
+    $$,
+    'authenticated user can insert a list without returning it'
 );
+
+insert into public.lists (id, name)
+values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'List B');
 
 select is(
     (
@@ -89,6 +89,23 @@ select is(
     ),
     'owner',
     'new list automatically creates an owner membership'
+);
+
+select is(
+    (select name from public.lists where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+    'List A',
+    'new owner can select a list after a separate insert'
+);
+
+select throws_ok(
+    $$
+        insert into public.lists (id, name)
+        values ('99999999-9999-9999-9999-999999999999', 'Returning list')
+        returning id, name, description
+    $$,
+    '42501',
+    'new row violates row-level security policy for table "lists"',
+    'insert with returning fails before the owner membership is visible to list RLS'
 );
 
 reset role;

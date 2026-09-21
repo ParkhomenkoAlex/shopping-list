@@ -1,3 +1,5 @@
+import * as Crypto from 'expo-crypto';
+
 import { supabase } from '@/lib/SupabaseClient';
 
 import type { Database } from '@/types/database/database.types';
@@ -36,20 +38,19 @@ export async function createList(
     name: string,
     description: string | null
 ): Promise<List> {
-    const { data, error } = await supabase
-        .from('lists')
-        .insert({
-            name,
-            description,
-        })
-        .select()
-        .single();
+    const id = Crypto.randomUUID();
+
+    const { error } = await supabase.from('lists').insert({
+        id,
+        name,
+        description,
+    });
 
     if (error) {
         throw error;
     }
 
-    return data;
+    return getListById(id);
 }
 
 export async function updateList(
