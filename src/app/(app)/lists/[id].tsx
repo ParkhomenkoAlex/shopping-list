@@ -1,13 +1,10 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { ListItems } from '@/components/items/ListItems';
 import { EditListModal } from '@/components/lists/EditListModal';
 import { ListHeader } from '@/components/lists/ListHeader';
-import { useList } from '@/hooks/useList';
-import { confirmAction } from '@/utils/confirmation';
-import { initialListForm, type ListForm } from '@/types/ListForm';
+import { useListDetails } from '@/hooks/useListDetails';
 
 export default function ListDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -16,80 +13,18 @@ export default function ListDetailsScreen() {
         list,
         isListLoading,
         listError,
-        updateList,
+        isEditListModalVisible,
+        editListForm,
         isUpdating,
         updateError,
-        deleteList,
-        isDeleting: isListDeleting,
-        deleteError: deleteListError,
-    } = useList(id);
-
-    const [isEditListModalVisible, setIsEditListModalVisible] = useState(false);
-
-    const [editListForm, setEditListForm] = useState<ListForm>(initialListForm);
-
-    const handleOpenEditListModal = () => {
-        if (!list) {
-            return;
-        }
-
-        setEditListForm({
-            name: list.name,
-            description: list.description ?? '',
-        });
-
-        setIsEditListModalVisible(true);
-    };
-
-    const handleChangeEditListForm = (field: keyof ListForm, value: string) => {
-        setEditListForm((currentForm) => ({
-            ...currentForm,
-            [field]: value,
-        }));
-    };
-
-    const handleCancelEditList = () => {
-        setEditListForm(initialListForm);
-        setIsEditListModalVisible(false);
-    };
-
-    const handleSaveEditList = async () => {
-        const name = editListForm.name.trim();
-        const description = editListForm.description.trim();
-
-        if (!name) {
-            return;
-        }
-
-        try {
-            await updateList({
-                name,
-                description: description || null,
-            });
-
-            setEditListForm(initialListForm);
-            setIsEditListModalVisible(false);
-        } catch (error) {
-            console.error('Failed to update list:', error);
-        }
-    };
-
-    const handleDeleteList = () => {
-        confirmAction({
-            title: 'Delete list',
-            message: 'Are you sure you want to delete this list?',
-            confirmText: 'Delete',
-            onConfirm: async () => {
-                try {
-                    await deleteList();
-
-                    router.replace('/lists');
-                } catch (error) {
-                    console.error('Failed to delete list:', error);
-                }
-            },
-        });
-    };
+        isListDeleting,
+        deleteListError,
+        handleOpenEditListModal,
+        handleChangeEditListForm,
+        handleCancelEditList,
+        handleSaveEditList,
+        handleDeleteList,
+    } = useListDetails(id);
 
     return (
         <View style={styles.container}>
