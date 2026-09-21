@@ -2,11 +2,13 @@ import {
     createContext,
     useContext,
     useEffect,
+    useRef,
     useState,
     type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 
+import { queryClient } from '@/lib/QueryClient';
 import { supabase } from '@/lib/SupabaseClient';
 
 type AuthContextValue = {
@@ -27,24 +29,35 @@ type AuthProviderProps = {
 export function AuthProvider({ children }: AuthProviderProps) {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const previousUserIdRef = useRef<string | null>(null);
 
     useEffect(() => {
+        const updateSession = (nextSession: Session | null) => {
+            const nextUserId = nextSession?.user.id ?? null;
+
+            if (previousUserIdRef.current !== nextUserId) {
+                previousUserIdRef.current = nextUserId;
+                queryClient.clear();
+            }
+
+            setSession(nextSession);
+            setIsLoading(false);
+        };
+
         const initializeAuth = async () => {
             const {
                 data: { session },
             } = await supabase.auth.getSession();
 
-            setSession(session);
-            setIsLoading(false);
+            updateSession(session);
         };
 
         void initializeAuth();
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setIsLoading(false);
+        } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+            updateSession(nextSession);
         });
 
         return () => {
