@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { ListItems } from '@/components/items/ListItems';
 import { EditListModal } from '@/components/lists/EditListModal';
 import { ListHeader } from '@/components/lists/ListHeader';
+import { ListSharing } from '@/components/lists/ListSharing';
 import { useListDetails } from '@/hooks/useListDetails';
 
 export default function ListDetailsScreen() {
@@ -48,6 +49,8 @@ export default function ListDetailsScreen() {
             {!isListLoading && !listError && list && (
                 <View style={styles.content}>
                     <ListItems listId={id} />
+
+                    <ListSharing listId={id} />
                 </View>
             )}
 

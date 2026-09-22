@@ -121,7 +121,10 @@ export type Database = {
             [_ in never]: never;
         };
         Functions: {
-            [_ in never]: never;
+            add_list_member_by_email: {
+                Args: { target_email: string; target_list_id: string };
+                Returns: undefined;
+            };
         };
         Enums: {
             list_member_role: 'owner' | 'member';
