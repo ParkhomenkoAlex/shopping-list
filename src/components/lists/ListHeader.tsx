@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { SharedWithModal } from '@/components/lists/SharedWithModal';
+import { useListMembership } from '@/hooks/useListMembership';
+import { useAuth } from '@/providers/AuthProvider';
 import type { List } from '@/types/List';
 
 type ListHeaderProps = {
@@ -19,6 +23,11 @@ export function ListHeader({
     onEdit,
     onDelete,
 }: ListHeaderProps) {
+    const { user } = useAuth();
+    const { sharedMembers } = useListMembership(list.id, user?.id);
+    const [isSharedWithModalVisible, setIsSharedWithModalVisible] =
+        useState(false);
+
     return (
         <View style={styles.listInfo}>
             <View style={styles.listHeader}>
@@ -33,6 +42,17 @@ export function ListHeader({
                 </View>
 
                 <View style={styles.listActions}>
+                    {sharedMembers.length > 0 && (
+                        <Pressable
+                            style={styles.sharingButton}
+                            onPress={() => setIsSharedWithModalVisible(true)}
+                        >
+                            <Text style={styles.sharingButtonText}>
+                                Sharing
+                            </Text>
+                        </Pressable>
+                    )}
+
                     <Pressable
                         style={[
                             styles.editListButton,
@@ -62,6 +82,12 @@ export function ListHeader({
             {deleteError && (
                 <Text style={styles.error}>{deleteError.message}</Text>
             )}
+
+            <SharedWithModal
+                visible={isSharedWithModalVisible}
+                members={sharedMembers}
+                onClose={() => setIsSharedWithModalVisible(false)}
+            />
         </View>
     );
 }
@@ -103,6 +129,19 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 8,
         backgroundColor: '#666666',
+    },
+
+    sharingButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        backgroundColor: '#208AEF',
+    },
+
+    sharingButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
     },
 
     editListButtonText: {

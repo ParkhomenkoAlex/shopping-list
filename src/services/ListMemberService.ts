@@ -1,8 +1,12 @@
 import { supabase } from '@/lib/SupabaseClient';
 
 import type { Tables } from '@/types/database/database.types';
+import type { Database } from '@/types/database/database.types';
 
 export type ListMemberRole = Tables<'list_members'>['role'];
+
+export type SharedListMember =
+    Database['public']['Functions']['get_list_shared_members']['Returns'][number];
 
 export async function getListMemberRole(
     listId: string,
@@ -20,6 +24,20 @@ export async function getListMemberRole(
     }
 
     return data?.role ?? null;
+}
+
+export async function getSharedListMembers(
+    listId: string
+): Promise<SharedListMember[]> {
+    const { data, error } = await supabase.rpc('get_list_shared_members', {
+        target_list_id: listId,
+    });
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
 }
 
 export async function addMemberByEmail(

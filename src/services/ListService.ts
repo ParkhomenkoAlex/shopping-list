@@ -40,6 +40,9 @@ export async function createList(
 ): Promise<List> {
     const id = Crypto.randomUUID();
 
+    // Owner membership is created automatically by a PostgreSQL trigger
+    // after the list is inserted. The mobile client only creates the list.
+    // TODO: Document this list ownership flow in README.md.
     const { error } = await supabase.from('lists').insert({
         id,
         name,

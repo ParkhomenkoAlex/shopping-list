@@ -125,6 +125,14 @@ export type Database = {
                 Args: { target_email: string; target_list_id: string };
                 Returns: undefined;
             };
+            get_list_shared_members: {
+                Args: { target_list_id: string };
+                Returns: {
+                    email: string;
+                    role: Database['public']['Enums']['list_member_role'];
+                    user_id: string;
+                }[];
+            };
         };
         Enums: {
             list_member_role: 'owner' | 'member';
