@@ -1,6 +1,8 @@
 select count(*) as lists_count
 from public.lists;
 
+-- Lists without owners are legacy historical exceptions and must not receive
+-- automatic owner memberships without a verified mapping.
 select count(*) as lists_without_owner_count
 from public.lists as list
 where not exists (

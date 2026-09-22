@@ -4,7 +4,7 @@ begin;
 
 set local search_path = extensions, public, auth;
 
-select plan(36);
+select plan(40);
 
 insert into auth.users (
     id,
@@ -36,6 +36,16 @@ values
         '{}',
         now(),
         now()
+    ),
+    (
+        '33333333-3333-3333-3333-333333333333',
+        'authenticated',
+        'authenticated',
+        'second-owner@example.test',
+        '{"provider":"email","providers":["email"]}',
+        '{}',
+        now(),
+        now()
     );
 
 alter table public.lists disable trigger create_list_owner_membership;
@@ -59,7 +69,7 @@ select is(
         where list_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
     ),
     0::bigint,
-    'legacy list can exist without a membership'
+    'legacy list without membership remains valid under the single-owner constraint'
 );
 
 select set_config(
@@ -89,6 +99,17 @@ select is(
     ),
     'owner',
     'new list automatically creates an owner membership'
+);
+
+select is(
+    (
+        select count(*)
+        from public.list_members
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and role = 'owner'::public.list_member_role
+    ),
+    1::bigint,
+    'new list has exactly one owner'
 );
 
 select is(
@@ -268,11 +289,16 @@ select set_config(
 );
 set local role authenticated;
 
-insert into public.list_members (list_id, user_id, role)
-values (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    '22222222-2222-2222-2222-222222222222',
-    'member'
+select lives_ok(
+    $$
+        insert into public.list_members (list_id, user_id, role)
+        values (
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            '22222222-2222-2222-2222-222222222222',
+            'member'
+        )
+    $$,
+    'owner can add a member'
 );
 
 reset role;
@@ -406,20 +432,41 @@ select set_config(
 );
 set local role authenticated;
 
-update public.list_members
-set role = 'owner'
-where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-  and user_id = '22222222-2222-2222-2222-222222222222';
+select throws_ok(
+    $$
+        insert into public.list_members (list_id, user_id, role)
+        values (
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            '33333333-3333-3333-3333-333333333333',
+            'owner'
+        )
+    $$,
+    '23505',
+    'duplicate key value violates unique constraint "list_members_one_owner_per_list_idx"',
+    'owner cannot add a second owner'
+);
+
+select throws_ok(
+    $$
+        update public.list_members
+        set role = 'owner'
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    $$,
+    '23505',
+    'duplicate key value violates unique constraint "list_members_one_owner_per_list_idx"',
+    'owner cannot promote a member to a second owner'
+);
 
 select is(
     (
         select count(*)
         from public.list_members
         where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-          and role = 'owner'
+          and role = 'owner'::public.list_member_role
     ),
-    2::bigint,
-    'owner can add a second owner'
+    1::bigint,
+    'list retains exactly one owner'
 );
 
 reset role;
