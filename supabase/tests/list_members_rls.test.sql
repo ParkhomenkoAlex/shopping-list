@@ -4,7 +4,7 @@ begin;
 
 set local search_path = extensions, public, auth;
 
-select plan(40);
+select plan(47);
 
 insert into auth.users (
     id,
@@ -366,10 +366,17 @@ select is(
     'member cannot delete a list'
 );
 
-update public.list_members
-set role = 'owner'
-where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-  and user_id = '22222222-2222-2222-2222-222222222222';
+select throws_ok(
+    $$
+        update public.list_members
+        set role = 'owner'
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    $$,
+    '42501',
+    'permission denied for table list_members',
+    'member cannot change a membership role'
+);
 
 select is(
     (
@@ -408,10 +415,17 @@ select throws_ok(
     'member cannot move a list item to a foreign list'
 );
 
-update public.list_members
-set list_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
-where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-  and user_id = '22222222-2222-2222-2222-222222222222';
+select throws_ok(
+    $$
+        update public.list_members
+        set list_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    $$,
+    '42501',
+    'permission denied for table list_members',
+    'member cannot change a membership list'
+);
 
 select is(
     (
@@ -441,8 +455,8 @@ select throws_ok(
             'owner'
         )
     $$,
-    '23505',
-    'duplicate key value violates unique constraint "list_members_one_owner_per_list_idx"',
+    '42501',
+    'new row violates row-level security policy for table "list_members"',
     'owner cannot add a second owner'
 );
 
@@ -453,9 +467,33 @@ select throws_ok(
         where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
           and user_id = '22222222-2222-2222-2222-222222222222'
     $$,
-    '23505',
-    'duplicate key value violates unique constraint "list_members_one_owner_per_list_idx"',
+    '42501',
+    'permission denied for table list_members',
     'owner cannot promote a member to a second owner'
+);
+
+select throws_ok(
+    $$
+        update public.list_members
+        set user_id = '33333333-3333-3333-3333-333333333333'
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    $$,
+    '42501',
+    'permission denied for table list_members',
+    'owner cannot reassign a membership user'
+);
+
+select throws_ok(
+    $$
+        update public.list_members
+        set list_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    $$,
+    '42501',
+    'permission denied for table list_members',
+    'owner cannot move a membership to another list'
 );
 
 select is(
@@ -467,6 +505,51 @@ select is(
     ),
     1::bigint,
     'list retains exactly one owner'
+);
+
+select is(
+    (
+        select jsonb_build_object(
+            'list_id',
+            list_id,
+            'user_id',
+            user_id,
+            'role',
+            role::text
+        )
+        from public.list_members
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    ),
+    jsonb_build_object(
+        'list_id',
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+        'user_id',
+        '22222222-2222-2222-2222-222222222222'::uuid,
+        'role',
+        'member'
+    ),
+    'forbidden membership mutations leave the member unchanged'
+);
+
+select lives_ok(
+    $$
+        delete from public.list_members
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    $$,
+    'owner can delete a member'
+);
+
+select is(
+    (
+        select count(*)
+        from public.list_members
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '22222222-2222-2222-2222-222222222222'
+    ),
+    0::bigint,
+    'deleted member no longer has a membership'
 );
 
 reset role;
@@ -502,6 +585,8 @@ select throws_ok(
     'last owner cannot be deleted'
 );
 
+reset role;
+
 select throws_ok(
     $$
         update public.list_members
@@ -511,8 +596,15 @@ select throws_ok(
     $$,
     'P0001',
     'A list must retain at least one owner',
-    'last owner cannot be demoted'
+    'last owner cannot be demoted when update permissions are bypassed'
 );
+
+select set_config(
+    'request.jwt.claim.sub',
+    '11111111-1111-1111-1111-111111111111',
+    true
+);
+set local role authenticated;
 
 select lives_ok(
     $$
