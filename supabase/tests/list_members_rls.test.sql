@@ -4,7 +4,7 @@ begin;
 
 set local search_path = extensions, public, auth;
 
-select plan(58);
+select plan(62);
 
 insert into auth.users (
     id,
@@ -624,6 +624,37 @@ select throws_ok(
     'unknown email returns a safe error'
 );
 
+select is(
+    (
+        select jsonb_agg(
+            jsonb_build_object(
+                'user_id',
+                user_id,
+                'email',
+                email,
+                'role',
+                role::text
+            )
+        )
+        from public.get_list_shared_members(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        )
+    ),
+    jsonb_build_array(
+        jsonb_build_object(
+            'user_id', '22222222-2222-2222-2222-222222222222'::uuid,
+            'email', 'member@example.test',
+            'role', 'member'
+        ),
+        jsonb_build_object(
+            'user_id', '33333333-3333-3333-3333-333333333333'::uuid,
+            'email', 'second-owner@example.test',
+            'role', 'member'
+        )
+    ),
+    'owner can view shared members without seeing the owner'
+);
+
 reset role;
 select set_config(
     'request.jwt.claim.sub',
@@ -631,6 +662,17 @@ select set_config(
     true
 );
 set local role authenticated;
+
+select is(
+    (
+        select count(*)
+        from public.get_list_shared_members(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        )
+    ),
+    2::bigint,
+    'member can view shared members'
+);
 
 select throws_ok(
     $$
@@ -651,6 +693,17 @@ select set_config(
     true
 );
 set local role authenticated;
+
+select throws_ok(
+    $$
+        select public.get_list_shared_members(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        )
+    $$,
+    '42501',
+    'Only list members can view shared members',
+    'outsider cannot view shared members'
+);
 
 select lives_ok(
     $$
@@ -676,6 +729,17 @@ reset role;
 set local role anon;
 select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claims', '{}', true);
+
+select throws_ok(
+    $$
+        select public.get_list_shared_members(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        )
+    $$,
+    '42501',
+    'Authentication is required',
+    'anonymous user cannot view shared members'
+);
 
 select throws_ok(
     $$
