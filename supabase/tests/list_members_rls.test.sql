@@ -4,7 +4,7 @@ begin;
 
 set local search_path = extensions, public, auth;
 
-select plan(47);
+select plan(58);
 
 insert into auth.users (
     id,
@@ -42,6 +42,16 @@ values
         'authenticated',
         'authenticated',
         'second-owner@example.test',
+        '{"provider":"email","providers":["email"]}',
+        '{}',
+        now(),
+        now()
+    ),
+    (
+        '44444444-4444-4444-4444-444444444444',
+        'authenticated',
+        'authenticated',
+        'outsider@example.test',
         '{"provider":"email","providers":["email"]}',
         '{}',
         now(),
@@ -131,6 +141,8 @@ select throws_ok(
 
 reset role;
 set local role anon;
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claims', '{}', true);
 
 select throws_ok(
     $$insert into public.lists (name) values ('Anonymous list')$$,
@@ -531,6 +543,159 @@ select is(
     ),
     'forbidden membership mutations leave the member unchanged'
 );
+
+select lives_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'second-owner@example.test'
+        )
+    $$,
+    'owner can add an existing user by email'
+);
+
+select is(
+    (
+        select role::text
+        from public.list_members
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and user_id = '33333333-3333-3333-3333-333333333333'
+    ),
+    'member',
+    'email path creates a member role'
+);
+
+select is(
+    (
+        select count(*)
+        from public.list_members
+        where list_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+          and role = 'owner'::public.list_member_role
+    ),
+    1::bigint,
+    'email path cannot create ownership'
+);
+
+select throws_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'owner@example.test'
+        )
+    $$,
+    'P0001',
+    'Cannot add yourself as a member',
+    'owner cannot add themselves as a member'
+);
+
+select throws_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'member@example.test'
+        )
+    $$,
+    'P0001',
+    'User is already a list member',
+    'owner cannot add an existing member'
+);
+
+select throws_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'owner@example.test'
+        )
+    $$,
+    'P0001',
+    'Cannot add yourself as a member',
+    'owner cannot add an existing owner'
+);
+
+select throws_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'unknown@example.test'
+        )
+    $$,
+    'P0001',
+    'Unable to add member',
+    'unknown email returns a safe error'
+);
+
+reset role;
+select set_config(
+    'request.jwt.claim.sub',
+    '33333333-3333-3333-3333-333333333333',
+    true
+);
+set local role authenticated;
+
+select throws_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'outsider@example.test'
+        )
+    $$,
+    '42501',
+    'Only the list owner can add members',
+    'member cannot add a user by email'
+);
+
+reset role;
+select set_config(
+    'request.jwt.claim.sub',
+    '44444444-4444-4444-4444-444444444444',
+    true
+);
+set local role authenticated;
+
+select lives_ok(
+    $$
+        insert into public.lists (id, name)
+        values ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'List C')
+    $$,
+    'user can own another list'
+);
+
+select throws_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'member@example.test'
+        )
+    $$,
+    '42501',
+    'Only the list owner can add members',
+    'owner of another list cannot add a user to a foreign list'
+);
+
+reset role;
+set local role anon;
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claims', '{}', true);
+
+select throws_ok(
+    $$
+        select public.add_list_member_by_email(
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'outsider@example.test'
+        )
+    $$,
+    '42501',
+    'Authentication is required',
+    'anonymous user cannot add a member by email'
+);
+
+reset role;
+select set_config(
+    'request.jwt.claim.sub',
+    '11111111-1111-1111-1111-111111111111',
+    true
+);
+set local role authenticated;
 
 select lives_ok(
     $$
