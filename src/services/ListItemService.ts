@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/SupabaseClient';
 
-import type { Database } from '@/types/database/database.types';
-import type { Tables } from '@/types/database/database.types';
+import type { Database, Tables } from '@/types/database/database.types';
 
 export type ListItem = Tables<'list_items'>;
 

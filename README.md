@@ -1151,6 +1151,79 @@ com.anonymous.shoppinglist.local
 
 ---
 
+## Running Local Environment on Two Android Emulators Simultaneously
+
+To test multi-user workflows locally, you can run the Local environment on two Android Emulators at the same time.
+
+### 1. Start both emulators in Android Studio
+
+Open **Android Studio → Device Manager** and launch both virtual devices:
+
+- **Pixel 8** → `emulator-5554`
+- **Pixel 9** → `emulator-5556`
+
+### 2. Verify connected devices
+
+```bash
+adb devices
+```
+
+Expected output:
+
+```text
+List of devices attached
+emulator-5554	device
+emulator-5556	device
+```
+
+### 3. Start the Local environment in the first terminal
+
+In the first terminal, run:
+
+```bash
+pnpm local
+```
+
+This is the primary Local environment startup command: it regenerates native configuration, builds the Local APK, starts the Metro bundler, and launches the application on one of the running emulators.
+
+### 4. Launch on the second emulator in a second terminal
+
+In the second terminal, run:
+
+```bash
+pnpm local:pixel9
+```
+
+This script:
+
+- installs the current Local APK on `emulator-5556`;
+- sets up port forwarding via `adb reverse tcp:8081 tcp:8081`;
+- opens the application on Pixel 9 using the development client.
+
+### 5. Multi-user testing
+
+Both emulators connect to the same Local Supabase instance and share the same Metro bundler instance.
+
+This setup is used for testing:
+
+- two different authenticated users simultaneously;
+- shared lists;
+- list and list item mutations;
+- Supabase Realtime synchronization between two users.
+
+Example configuration:
+
+```text
+Pixel 8 → User A
+Pixel 9 → User B
+```
+
+### 6. Stopping Metro
+
+Metro is stopped by pressing `Ctrl+C` in the first terminal running `pnpm local`.
+
+---
+
 ## Development
 
 ```bash

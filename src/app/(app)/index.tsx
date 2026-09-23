@@ -1,17 +1,22 @@
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '@/providers/AuthProvider';
 
 const appEnv = Constants.expoConfig?.extra?.appEnv ?? 'Unknown';
 const appVersion = Constants.expoConfig?.version ?? 'Unknown';
 const appBuild = Constants.expoConfig?.android?.versionCode ?? 'Unknown';
 
 export default function HomeScreen() {
+    const { user } = useAuth();
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>
                 SL-{appEnv}-{appBuild}-v{appVersion}
             </Text>
+
+            {user?.email && <Text>{user.email}</Text>}
 
             <Pressable
                 style={styles.button}

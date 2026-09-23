@@ -38,6 +38,7 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "local": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
+        "local:pixel9": "adb -s emulator-5556 install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s emulator-5556 reverse tcp:8081 tcp:8081 && adb -s emulator-5556 shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\"",
         "dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
         "prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
         "db:status": "supabase status",
