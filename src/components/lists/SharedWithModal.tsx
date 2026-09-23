@@ -5,12 +5,18 @@ import type { SharedListMember } from '@/services/ListMemberService';
 type SharedWithModalProps = {
     visible: boolean;
     members: SharedListMember[];
+    canRemove?: boolean;
+    isRemoving?: boolean;
+    onRemoveMember?: (userId: string, email: string) => void | Promise<void>;
     onClose: () => void;
 };
 
 export function SharedWithModal({
     visible,
     members,
+    canRemove,
+    isRemoving,
+    onRemoveMember,
     onClose,
 }: SharedWithModalProps) {
     return (
@@ -26,9 +32,35 @@ export function SharedWithModal({
 
                     <View style={styles.members}>
                         {members.map((member) => (
-                            <View key={member.user_id} style={styles.member}>
-                                <Text style={styles.email}>{member.email}</Text>
-                                <Text style={styles.role}>{member.role}</Text>
+                            <View key={member.user_id} style={styles.memberRow}>
+                                <View style={styles.memberInfo}>
+                                    <Text style={styles.email}>
+                                        {member.email}
+                                    </Text>
+                                    <Text style={styles.role}>
+                                        {member.role}
+                                    </Text>
+                                </View>
+
+                                {canRemove && onRemoveMember && (
+                                    <Pressable
+                                        style={[
+                                            styles.removeButton,
+                                            isRemoving && styles.disabledButton,
+                                        ]}
+                                        onPress={() =>
+                                            onRemoveMember(
+                                                member.user_id,
+                                                member.email
+                                            )
+                                        }
+                                        disabled={isRemoving}
+                                    >
+                                        <Text style={styles.removeButtonText}>
+                                            Remove
+                                        </Text>
+                                    </Pressable>
+                                )}
                             </View>
                         ))}
                     </View>
@@ -66,7 +98,15 @@ const styles = StyleSheet.create({
         gap: 12,
     },
 
-    member: {
+    memberRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+    },
+
+    memberInfo: {
+        flex: 1,
         gap: 4,
     },
 
@@ -77,6 +117,23 @@ const styles = StyleSheet.create({
     role: {
         color: '#666666',
         fontSize: 14,
+    },
+
+    removeButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
+        backgroundColor: '#D32F2F',
+    },
+
+    removeButtonText: {
+        color: '#FFFFFF',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+
+    disabledButton: {
+        opacity: 0.5,
     },
 
     closeButton: {

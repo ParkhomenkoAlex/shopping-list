@@ -20,12 +20,12 @@ export async function getLists(): Promise<List[]> {
     return data;
 }
 
-export async function getListById(id: string): Promise<List> {
+export async function getListById(id: string): Promise<List | null> {
     const { data, error } = await supabase
         .from('lists')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
     if (error) {
         throw error;
@@ -53,7 +53,13 @@ export async function createList(
         throw error;
     }
 
-    return getListById(id);
+    const createdList = await getListById(id);
+
+    if (!createdList) {
+        throw new Error('Failed to retrieve created list');
+    }
+
+    return createdList;
 }
 
 export async function updateList(

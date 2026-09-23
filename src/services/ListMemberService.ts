@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/SupabaseClient';
 
-import type { Tables } from '@/types/database/database.types';
-import type { Database } from '@/types/database/database.types';
+import type { Database, Tables } from '@/types/database/database.types';
 
 export type ListMemberRole = Tables<'list_members'>['role'];
 
@@ -48,6 +47,21 @@ export async function addMemberByEmail(
         target_list_id: listId,
         target_email: email,
     });
+
+    if (error) {
+        throw error;
+    }
+}
+
+export async function removeListMember(
+    listId: string,
+    userId: string
+): Promise<void> {
+    const { error } = await supabase
+        .from('list_members')
+        .delete()
+        .eq('list_id', listId)
+        .eq('user_id', userId);
 
     if (error) {
         throw error;

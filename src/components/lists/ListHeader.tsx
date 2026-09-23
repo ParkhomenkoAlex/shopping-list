@@ -5,6 +5,7 @@ import { SharedWithModal } from '@/components/lists/SharedWithModal';
 import { useListMembership } from '@/hooks/useListMembership';
 import { useAuth } from '@/providers/AuthProvider';
 import type { List } from '@/types/List';
+import { confirmAction } from '@/utils/confirmation';
 
 type ListHeaderProps = {
     list: List;
@@ -24,9 +25,27 @@ export function ListHeader({
     onDelete,
 }: ListHeaderProps) {
     const { user } = useAuth();
-    const { sharedMembers } = useListMembership(list.id, user?.id);
+    const { memberRole, sharedMembers, removeMember, isRemovingMember } =
+        useListMembership(list.id, user?.id);
     const [isSharedWithModalVisible, setIsSharedWithModalVisible] =
         useState(false);
+
+    const isOwner = memberRole === 'owner';
+
+    const handleRemoveMember = (userId: string, email: string) => {
+        confirmAction({
+            title: 'Remove member',
+            message: `Are you sure you want to remove "${email}"?`,
+            confirmText: 'Remove',
+            onConfirm: async () => {
+                try {
+                    await removeMember(userId);
+                } catch (error) {
+                    console.error('Failed to remove member:', error);
+                }
+            },
+        });
+    };
 
     return (
         <View style={styles.listInfo}>
@@ -64,18 +83,20 @@ export function ListHeader({
                         <Text style={styles.editListButtonText}>Edit</Text>
                     </Pressable>
 
-                    <Pressable
-                        style={[
-                            styles.deleteListButton,
-                            isDeleting && styles.disabledButton,
-                        ]}
-                        onPress={onDelete}
-                        disabled={isDeleting}
-                    >
-                        <Text style={styles.deleteListButtonText}>
-                            {isDeleting ? 'Deleting...' : 'Delete'}
-                        </Text>
-                    </Pressable>
+                    {isOwner && (
+                        <Pressable
+                            style={[
+                                styles.deleteListButton,
+                                isDeleting && styles.disabledButton,
+                            ]}
+                            onPress={onDelete}
+                            disabled={isDeleting}
+                        >
+                            <Text style={styles.deleteListButtonText}>
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </Text>
+                        </Pressable>
+                    )}
                 </View>
             </View>
 
@@ -86,6 +107,9 @@ export function ListHeader({
             <SharedWithModal
                 visible={isSharedWithModalVisible}
                 members={sharedMembers}
+                canRemove={isOwner}
+                isRemoving={isRemovingMember}
+                onRemoveMember={handleRemoveMember}
                 onClose={() => setIsSharedWithModalVisible(false)}
             />
         </View>

@@ -1,11 +1,14 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useList } from '@/hooks/useList';
+import { useListMembership } from '@/hooks/useListMembership';
+import { useAuth } from '@/providers/AuthProvider';
 import { initialListForm, type ListForm } from '@/types/ListForm';
 import { confirmAction } from '@/utils/confirmation';
 
 export function useListDetails(id: string) {
+    const { user } = useAuth();
     const {
         list,
         isListLoading,
@@ -18,9 +21,33 @@ export function useListDetails(id: string) {
         deleteError: deleteListError,
     } = useList(id);
 
+    const { memberRole, isMemberRoleLoading, memberRoleError } =
+        useListMembership(id, user?.id);
+
     const [isEditListModalVisible, setIsEditListModalVisible] = useState(false);
 
     const [editListForm, setEditListForm] = useState<ListForm>(initialListForm);
+
+    useEffect(() => {
+        if (!isListLoading && list === null) {
+            router.replace('/lists');
+            return;
+        }
+
+        if (
+            !isListLoading &&
+            !isMemberRoleLoading &&
+            user &&
+            memberRole === null
+        ) {
+            router.replace('/lists');
+            return;
+        }
+
+        if (listError) {
+            router.replace('/lists');
+        }
+    }, [isListLoading, list, isMemberRoleLoading, user, memberRole, listError]);
 
     const handleOpenEditListModal = () => {
         if (!list) {
@@ -89,6 +116,9 @@ export function useListDetails(id: string) {
         list,
         isListLoading,
         listError,
+        memberRole,
+        isMemberRoleLoading,
+        memberRoleError,
         isEditListModalVisible,
         editListForm,
         isUpdating,

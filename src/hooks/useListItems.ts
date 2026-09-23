@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { supabase } from '@/lib/SupabaseClient';
 import {
     createListItem,
     deleteListItem,
@@ -19,6 +21,36 @@ export function useListItems(listId: string | undefined) {
         queryFn: () => getListItems(listId!),
         enabled: Boolean(listId),
     });
+
+    useEffect(() => {
+        if (!listId) {
+            return;
+        }
+
+        const channel = supabase
+            .channel(
+                `list-items:${listId}:${Math.random().toString(36).slice(2)}`
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'list_items',
+                    filter: `list_id=eq.${listId}`,
+                },
+                () => {
+                    void queryClient.invalidateQueries({
+                        queryKey: ['list-items', listId],
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+    }, [listId, queryClient]);
 
     const createListItemMutation = useMutation({
         mutationFn: (name: string) => createListItem(listId!, name),

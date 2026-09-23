@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { supabase } from '@/lib/SupabaseClient';
 import {
     createList,
     deleteList,
@@ -7,9 +9,12 @@ import {
     getLists,
     updateList,
 } from '@/services/ListService';
+import { useAuth } from '@/providers/AuthProvider';
 
 export function useList(id?: string) {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const userId = user?.id;
 
     const {
         data: lists = [],
@@ -30,6 +35,77 @@ export function useList(id?: string) {
         queryFn: () => getListById(id!),
         enabled: Boolean(id),
     });
+
+    useEffect(() => {
+        if (id) {
+            const channel = supabase
+                .channel(`list:${id}:${Math.random().toString(36).slice(2)}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'lists',
+                        filter: `id=eq.${id}`,
+                    },
+                    () => {
+                        void queryClient.invalidateQueries({
+                            queryKey: ['list', id],
+                        });
+
+                        void queryClient.invalidateQueries({
+                            queryKey: ['lists'],
+                        });
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                void supabase.removeChannel(channel);
+            };
+        }
+
+        if (!userId) {
+            return;
+        }
+
+        const channel = supabase
+            .channel(
+                `lists-user:${userId}:${Math.random().toString(36).slice(2)}`
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'lists',
+                },
+                () => {
+                    void queryClient.invalidateQueries({
+                        queryKey: ['lists'],
+                    });
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'list_members',
+                    filter: `user_id=eq.${userId}`,
+                },
+                () => {
+                    void queryClient.invalidateQueries({
+                        queryKey: ['lists'],
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+    }, [id, queryClient, userId]);
 
     const createListMutation = useMutation({
         mutationFn: ({
