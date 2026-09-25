@@ -38,29 +38,36 @@ export function SharedWithModal({
                                         {member.email}
                                     </Text>
                                     <Text style={styles.role}>
-                                        {member.role}
+                                        {member.role === 'owner'
+                                            ? 'Owner'
+                                            : 'Member'}
                                     </Text>
                                 </View>
 
-                                {canRemove && onRemoveMember && (
-                                    <Pressable
-                                        style={[
-                                            styles.removeButton,
-                                            isRemoving && styles.disabledButton,
-                                        ]}
-                                        onPress={() =>
-                                            onRemoveMember(
-                                                member.user_id,
-                                                member.email
-                                            )
-                                        }
-                                        disabled={isRemoving}
-                                    >
-                                        <Text style={styles.removeButtonText}>
-                                            Remove
-                                        </Text>
-                                    </Pressable>
-                                )}
+                                {canRemove &&
+                                    onRemoveMember &&
+                                    member.role !== 'owner' && (
+                                        <Pressable
+                                            style={[
+                                                styles.removeButton,
+                                                isRemoving &&
+                                                    styles.disabledButton,
+                                            ]}
+                                            onPress={() =>
+                                                onRemoveMember(
+                                                    member.user_id,
+                                                    member.email
+                                                )
+                                            }
+                                            disabled={isRemoving}
+                                        >
+                                            <Text
+                                                style={styles.removeButtonText}
+                                            >
+                                                Remove
+                                            </Text>
+                                        </Pressable>
+                                    )}
                             </View>
                         ))}
                     </View>
