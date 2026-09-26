@@ -63,11 +63,11 @@ export function ListHeader({
             const result = await notifyMembers();
             if (result && result.notifiedCount > 0) {
                 setNotifySuccessMessage(
-                    `Уведомление отправлено (${result.notifiedCount})`
+                    `Notification was sent (${result.notifiedCount})`
                 );
             } else {
                 setNotifySuccessMessage(
-                    'Нет других участников с зарегистрированными push-токенами'
+                    'There are no other members with registered push-tokens'
                 );
             }
         } catch (error) {

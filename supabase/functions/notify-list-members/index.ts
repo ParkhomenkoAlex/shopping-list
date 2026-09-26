@@ -12,6 +12,16 @@ interface RequestPayload {
     list_id?: string;
 }
 
+interface ExpoPushTicket {
+    status: 'ok' | 'error';
+    id?: string;
+    message?: string;
+    details?: {
+        error?: string;
+        [key: string]: unknown;
+    };
+}
+
 Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
@@ -19,6 +29,7 @@ Deno.serve(async (req: Request) => {
 
     try {
         const authHeader = req.headers.get('Authorization');
+
         if (!authHeader) {
             return new Response(
                 JSON.stringify({ error: 'Missing Authorization header' }),
@@ -110,7 +121,7 @@ Deno.serve(async (req: Request) => {
         }
 
         const recipientUserIds = (members || []).map(
-            (m: { user_id: string }) => m.user_id
+            (member: { user_id: string }) => member.user_id
         );
 
         if (recipientUserIds.length === 0) {
@@ -119,6 +130,7 @@ Deno.serve(async (req: Request) => {
                     success: true,
                     message: 'No other members to notify',
                     notifiedCount: 0,
+                    failedCount: 0,
                 }),
                 {
                     status: 200,
@@ -151,7 +163,7 @@ Deno.serve(async (req: Request) => {
         const validTokens = [
             ...new Set(
                 (pushTokens || [])
-                    .map((t: { token: string }) => t.token)
+                    .map((token: { token: string }) => token.token)
                     .filter(Boolean)
             ),
         ];
@@ -162,6 +174,7 @@ Deno.serve(async (req: Request) => {
                     success: true,
                     message: 'No push tokens registered for other members',
                     notifiedCount: 0,
+                    failedCount: 0,
                 }),
                 {
                     status: 200,
@@ -190,10 +203,11 @@ Deno.serve(async (req: Request) => {
 
         const expoPushUrl = 'https://exp.host/--/api/v2/push/send';
         const chunkSize = 100;
-        const tickets = [];
+        const tickets: ExpoPushTicket[] = [];
 
         for (let i = 0; i < messages.length; i += chunkSize) {
             const chunk = messages.slice(i, i + chunkSize);
+
             const pushResponse = await fetch(expoPushUrl, {
                 method: 'POST',
                 headers: {
@@ -204,19 +218,112 @@ Deno.serve(async (req: Request) => {
                 body: JSON.stringify(chunk),
             });
 
+            const responseText = await pushResponse.text();
+
             if (!pushResponse.ok) {
-                const errorText = await pushResponse.text();
-                console.error('Expo push notification failed:', errorText);
-            } else {
-                const pushResult = await pushResponse.json();
-                tickets.push(...(pushResult.data || []));
+                console.error('Expo push notification request failed:', {
+                    status: pushResponse.status,
+                    statusText: pushResponse.statusText,
+                    body: responseText,
+                });
+
+                return new Response(
+                    JSON.stringify({
+                        error: 'Expo push notification request failed',
+                    }),
+                    {
+                        status: 502,
+                        headers: {
+                            ...corsHeaders,
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                );
             }
+
+            try {
+                const pushResult = JSON.parse(responseText) as {
+                    data?: ExpoPushTicket[];
+                };
+
+                if (!Array.isArray(pushResult.data)) {
+                    console.error('Invalid Expo push response:', {
+                        body: responseText,
+                    });
+
+                    return new Response(
+                        JSON.stringify({
+                            error: 'Invalid response from Expo push service',
+                        }),
+                        {
+                            status: 502,
+                            headers: {
+                                ...corsHeaders,
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
+                }
+
+                tickets.push(...pushResult.data);
+            } catch (error) {
+                console.error('Failed to parse Expo push response:', {
+                    error,
+                    body: responseText,
+                });
+
+                return new Response(
+                    JSON.stringify({
+                        error: 'Invalid response from Expo push service',
+                    }),
+                    {
+                        status: 502,
+                        headers: {
+                            ...corsHeaders,
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                );
+            }
+        }
+
+        const successfulTickets = tickets.filter(
+            (ticket) => ticket.status === 'ok'
+        );
+
+        const failedTickets = tickets.filter(
+            (ticket) => ticket.status === 'error'
+        );
+
+        if (failedTickets.length > 0) {
+            console.error('Expo push notification tickets failed:', {
+                failedCount: failedTickets.length,
+                failedTickets,
+            });
+
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    notifiedCount: successfulTickets.length,
+                    failedCount: failedTickets.length,
+                    tickets,
+                    error: 'Some push notifications failed',
+                }),
+                {
+                    status: 502,
+                    headers: {
+                        ...corsHeaders,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
         }
 
         return new Response(
             JSON.stringify({
                 success: true,
-                notifiedCount: validTokens.length,
+                notifiedCount: successfulTickets.length,
+                failedCount: 0,
                 tickets,
             }),
             {
@@ -230,6 +337,9 @@ Deno.serve(async (req: Request) => {
     } catch (err) {
         const message =
             err instanceof Error ? err.message : 'Internal server error';
+
+        console.error('notify-list-members failed:', err);
+
         return new Response(JSON.stringify({ error: message }), {
             status: 500,
             headers: {

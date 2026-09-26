@@ -34,7 +34,9 @@ export async function unregisterPushToken(token: string): Promise<void> {
 export interface NotifyListMembersResponse {
     success: boolean;
     notifiedCount: number;
+    failedCount: number;
     message?: string;
+    error?: string;
     tickets?: unknown[];
 }
 
