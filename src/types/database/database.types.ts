@@ -116,6 +116,33 @@ export type Database = {
                 };
                 Relationships: [];
             };
+            user_push_tokens: {
+                Row: {
+                    created_at: string;
+                    id: string;
+                    platform: string;
+                    token: string;
+                    updated_at: string;
+                    user_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    id?: string;
+                    platform: string;
+                    token: string;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: string;
+                    platform?: string;
+                    token?: string;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
         };
         Views: {
             [_ in never]: never;
@@ -132,6 +159,10 @@ export type Database = {
                     role: Database['public']['Enums']['list_member_role'];
                     user_id: string;
                 }[];
+            };
+            register_push_token: {
+                Args: { p_platform: string; p_token: string };
+                Returns: undefined;
             };
         };
         Enums: {

@@ -32,6 +32,9 @@ const config: ExpoConfig = {
         supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
         supabasePublishableKey:
             process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+        eas: {
+            projectId: '5e0f28d0-dae3-4248-9ffa-4625c583e3df',
+        },
     },
 
     ios: {
@@ -40,6 +43,8 @@ const config: ExpoConfig = {
 
     android: {
         versionCode,
+
+        googleServicesFile: `./firebase/google-services.${appEnv.toLowerCase()}.json`,
 
         adaptiveIcon: {
             backgroundColor: '#E6F4FE',
@@ -66,6 +71,7 @@ const config: ExpoConfig = {
     plugins: [
         'expo-router',
         'expo-sqlite',
+        'expo-notifications',
         [
             'expo-splash-screen',
             {

@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { queryClient } from '@/lib/QueryClient';
+import { PushNotificationRegistration } from '@/components/notifications/PushNotificationRegistration';
 
 function RootNavigator() {
     const { session, isLoading } = useAuth();
@@ -12,20 +13,24 @@ function RootNavigator() {
     }
 
     return (
-        <Stack>
-            <Stack.Protected guard={Boolean(session)}>
-                <Stack.Screen name="(app)" />
-            </Stack.Protected>
+        <>
+            <PushNotificationRegistration />
 
-            <Stack.Protected guard={!session}>
-                <Stack.Screen
-                    name="auth"
-                    options={{
-                        headerShown: false,
-                    }}
-                />
-            </Stack.Protected>
-        </Stack>
+            <Stack>
+                <Stack.Protected guard={Boolean(session)}>
+                    <Stack.Screen name="(app)" />
+                </Stack.Protected>
+
+                <Stack.Protected guard={!session}>
+                    <Stack.Screen
+                        name="auth"
+                        options={{
+                            headerShown: false,
+                        }}
+                    />
+                </Stack.Protected>
+            </Stack>
+        </>
     );
 }
 

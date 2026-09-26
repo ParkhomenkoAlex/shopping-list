@@ -8,6 +8,7 @@ import {
     getSharedListMembers,
     removeListMember,
 } from '@/services/ListMemberService';
+import { notifyListMembers } from '@/services/PushNotificationService';
 
 export function useListMembership(
     listId: string | undefined,
@@ -100,6 +101,10 @@ export function useListMembership(
         },
     });
 
+    const notifyMembersMutation = useMutation({
+        mutationFn: () => notifyListMembers(listId!),
+    });
+
     return {
         memberRole,
         isMemberRoleLoading,
@@ -116,5 +121,9 @@ export function useListMembership(
         removeMember: removeMemberMutation.mutateAsync,
         isRemovingMember: removeMemberMutation.isPending,
         removeMemberError: removeMemberMutation.error,
+
+        notifyMembers: notifyMembersMutation.mutateAsync,
+        isNotifying: notifyMembersMutation.isPending,
+        notifyError: notifyMembersMutation.error,
     };
 }

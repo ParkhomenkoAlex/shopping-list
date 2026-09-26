@@ -25,10 +25,20 @@ export function ListHeader({
     onDelete,
 }: ListHeaderProps) {
     const { user } = useAuth();
-    const { memberRole, sharedMembers, removeMember, isRemovingMember } =
-        useListMembership(list.id, user?.id);
+    const {
+        memberRole,
+        sharedMembers,
+        removeMember,
+        isRemovingMember,
+        notifyMembers,
+        isNotifying,
+        notifyError,
+    } = useListMembership(list.id, user?.id);
     const [isSharedWithModalVisible, setIsSharedWithModalVisible] =
         useState(false);
+    const [notifySuccessMessage, setNotifySuccessMessage] = useState<
+        string | null
+    >(null);
 
     const isOwner = memberRole === 'owner';
 
@@ -47,6 +57,24 @@ export function ListHeader({
         });
     };
 
+    const handleNotifyMembers = async () => {
+        setNotifySuccessMessage(null);
+        try {
+            const result = await notifyMembers();
+            if (result && result.notifiedCount > 0) {
+                setNotifySuccessMessage(
+                    `Уведомление отправлено (${result.notifiedCount})`
+                );
+            } else {
+                setNotifySuccessMessage(
+                    'Нет других участников с зарегистрированными push-токенами'
+                );
+            }
+        } catch (error) {
+            console.error('Failed to notify members:', error);
+        }
+    };
+
     return (
         <View style={styles.listInfo}>
             <View style={styles.listHeader}>
@@ -61,6 +89,19 @@ export function ListHeader({
                 </View>
 
                 <View style={styles.listActions}>
+                    <Pressable
+                        style={[
+                            styles.notifyButton,
+                            isNotifying && styles.disabledButton,
+                        ]}
+                        onPress={handleNotifyMembers}
+                        disabled={isNotifying}
+                    >
+                        <Text style={styles.notifyButtonText}>
+                            {isNotifying ? 'Notifying...' : 'Notify members'}
+                        </Text>
+                    </Pressable>
+
                     {sharedMembers.length > 0 && (
                         <Pressable
                             style={styles.sharingButton}
@@ -99,6 +140,14 @@ export function ListHeader({
                     )}
                 </View>
             </View>
+
+            {notifySuccessMessage && (
+                <Text style={styles.success}>{notifySuccessMessage}</Text>
+            )}
+
+            {notifyError && (
+                <Text style={styles.error}>{notifyError.message}</Text>
+            )}
 
             {deleteError && (
                 <Text style={styles.error}>{deleteError.message}</Text>
@@ -145,7 +194,21 @@ const styles = StyleSheet.create({
     listActions: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexWrap: 'wrap',
         gap: 8,
+    },
+
+    notifyButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        backgroundColor: '#388E3C',
+    },
+
+    notifyButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
     },
 
     editListButton: {
@@ -193,6 +256,11 @@ const styles = StyleSheet.create({
 
     error: {
         color: '#D32F2F',
-        marginBottom: 16,
+        marginTop: 4,
+    },
+
+    success: {
+        color: '#2E7D32',
+        marginTop: 4,
     },
 });
