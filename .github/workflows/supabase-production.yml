@@ -43,6 +43,18 @@ jobs:
               env:
                   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+            - name: Deploy Edge Functions to Production
+              run: |
+                  for function in supabase/functions/*; do
+                      if [ -d "$function" ] && [ -f "$function/index.ts" ]; then
+                          function_name=$(basename "$function")
+                          echo "Deploying Edge Function: $function_name"
+                          supabase functions deploy "$function_name" --project-ref ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+                      fi
+                  done
+              env:
+                  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
             - name: Calculate build number
               run: |
                   BUILD_NUMBER=$((300 + GITHUB_RUN_NUMBER))
