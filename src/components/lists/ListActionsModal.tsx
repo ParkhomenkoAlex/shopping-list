@@ -1,5 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 import type { MenuAnchor } from '@/components/lists/ListHeader';
 
@@ -7,8 +14,10 @@ type ListActionsModalProps = {
     visible: boolean;
     anchor: MenuAnchor | null;
     canManageList: boolean;
+    isNotifying: boolean;
     onEdit: () => void;
     onSharing: () => void;
+    onNotify: () => void;
     onDelete: () => void;
     onClose: () => void;
 };
@@ -17,8 +26,10 @@ export function ListActionsModal({
     visible,
     anchor,
     canManageList,
+    isNotifying,
     onEdit,
     onSharing,
+    onNotify,
     onDelete,
     onClose,
 }: ListActionsModalProps) {
@@ -55,7 +66,6 @@ export function ListActionsModal({
                                     size={21}
                                     color="#111111"
                                 />
-
                                 <Text style={styles.actionText}>Edit list</Text>
                             </Pressable>
                         )}
@@ -66,8 +76,32 @@ export function ListActionsModal({
                                 size={21}
                                 color="#111111"
                             />
-
                             <Text style={styles.actionText}>Sharing</Text>
+                        </Pressable>
+
+                        <Pressable
+                            style={[
+                                styles.action,
+                                isNotifying && styles.disabledAction,
+                            ]}
+                            onPress={onNotify}
+                            disabled={isNotifying}
+                        >
+                            {isNotifying ? (
+                                <ActivityIndicator size="small" />
+                            ) : (
+                                <Ionicons
+                                    name="notifications-outline"
+                                    size={21}
+                                    color="#111111"
+                                />
+                            )}
+
+                            <Text style={styles.actionText}>
+                                {isNotifying
+                                    ? 'Notifying...'
+                                    : 'Notify members'}
+                            </Text>
                         </Pressable>
 
                         {canManageList && (
@@ -77,7 +111,6 @@ export function ListActionsModal({
                                     size={21}
                                     color="#D32F2F"
                                 />
-
                                 <Text
                                     style={[
                                         styles.actionText,
@@ -100,28 +133,20 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'transparent',
     },
-
     menuWrapper: {
         position: 'absolute',
     },
-
     menu: {
         width: 210,
         paddingVertical: 6,
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
-
         elevation: 8,
-
         shadowColor: '#000000',
-        shadowOffset: {
-            width: 0,
-            height: 3,
-        },
+        shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.18,
         shadowRadius: 8,
     },
-
     action: {
         minHeight: 50,
         flexDirection: 'row',
@@ -129,12 +154,13 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingHorizontal: 16,
     },
-
+    disabledAction: {
+        opacity: 0.5,
+    },
     actionText: {
         fontSize: 16,
         color: '#111111',
     },
-
     deleteText: {
         color: '#D32F2F',
     },

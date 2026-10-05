@@ -22,6 +22,11 @@ interface ExpoPushTicket {
     };
 }
 
+interface PushTokenRow {
+    token: string;
+    user_id: string;
+}
+
 Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
@@ -160,13 +165,15 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const validTokens = [
-            ...new Set(
-                (pushTokens || [])
-                    .map((token: { token: string }) => token.token)
-                    .filter(Boolean)
-            ),
+        const pushTokenRows = (pushTokens ?? []) as PushTokenRow[];
+
+        const validTokens: string[] = [
+            ...new Set(pushTokenRows.map((pushToken) => pushToken.token)),
         ];
+
+        const notifiedUserCount = new Set(
+            pushTokenRows.map((pushToken) => pushToken.user_id)
+        ).size;
 
         if (validTokens.length === 0) {
             return new Response(
@@ -287,10 +294,6 @@ Deno.serve(async (req: Request) => {
             }
         }
 
-        const successfulTickets = tickets.filter(
-            (ticket) => ticket.status === 'ok'
-        );
-
         const failedTickets = tickets.filter(
             (ticket) => ticket.status === 'error'
         );
@@ -304,7 +307,7 @@ Deno.serve(async (req: Request) => {
             return new Response(
                 JSON.stringify({
                     success: false,
-                    notifiedCount: successfulTickets.length,
+                    notifiedCount: notifiedUserCount,
                     failedCount: failedTickets.length,
                     tickets,
                     error: 'Some push notifications failed',
@@ -322,7 +325,7 @@ Deno.serve(async (req: Request) => {
         return new Response(
             JSON.stringify({
                 success: true,
-                notifiedCount: successfulTickets.length,
+                notifiedCount: notifiedUserCount,
                 failedCount: 0,
                 tickets,
             }),

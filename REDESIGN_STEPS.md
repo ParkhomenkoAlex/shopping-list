@@ -47,9 +47,9 @@
 
 В меню `⋯`:
 
-- [x] Rename / Edit
-- [x] Members / Sharing
-- [x] Delete
+- [x] Edit list.
+- [x] Sharing.
+- [x] Delete list.
 
 Действия над item остаются через swipe, действия над самим List — через `⋯`.
 
@@ -84,6 +84,7 @@
 - [ ] Safe areas.
 - [ ] Keyboard behavior.
 - [ ] Проверка Android / iOS.
+- [ ] Привести все модалки к единому визуальному стилю и исправить их UI/UX.
 
 ## Workflow
 
