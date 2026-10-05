@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CreateListItem } from '@/components/items/CreateListItem';
 import { EditListItem } from '@/components/items/EditListItem';
@@ -9,9 +9,15 @@ import { confirmAction } from '@/utils/confirmation';
 
 type ListItemsProps = {
     listId: string;
+    isCreateVisible: boolean;
+    onCloseCreate: () => void;
 };
 
-export function ListItems({ listId }: ListItemsProps) {
+export function ListItems({
+    listId,
+    isCreateVisible,
+    onCloseCreate,
+}: ListItemsProps) {
     const {
         listItems,
         isCreating,
@@ -30,8 +36,11 @@ export function ListItems({ listId }: ListItemsProps) {
     const [editingListItemId, setEditingListItemId] = useState<string | null>(
         null
     );
-
     const [editingListItemName, setEditingListItemName] = useState('');
+
+    const activeItems = listItems.filter((listItem) => !listItem.is_completed);
+
+    const finishedItems = listItems.filter((listItem) => listItem.is_completed);
 
     const handleCreateListItem = async () => {
         const name = newListItemName.trim();
@@ -44,9 +53,15 @@ export function ListItems({ listId }: ListItemsProps) {
             await createListItem(name);
 
             setNewListItemName('');
+            onCloseCreate();
         } catch (error) {
             console.error('Failed to create list item:', error);
         }
+    };
+
+    const handleCancelCreateListItem = () => {
+        setNewListItemName('');
+        onCloseCreate();
     };
 
     const handleToggleListItem = async (
@@ -119,16 +134,43 @@ export function ListItems({ listId }: ListItemsProps) {
         });
     };
 
+    const renderListItem = (listItem: (typeof listItems)[number]) => {
+        const isEditing = editingListItemId === listItem.id;
+
+        if (isEditing) {
+            return (
+                <EditListItem
+                    key={listItem.id}
+                    name={editingListItemName}
+                    isUpdating={isListItemUpdating}
+                    onChangeName={setEditingListItemName}
+                    onCancel={handleCancelEditingListItem}
+                    onSave={handleSaveEditingListItem}
+                />
+            );
+        }
+
+        return (
+            <ListItem
+                key={listItem.id}
+                listItem={listItem}
+                isUpdating={isListItemUpdating}
+                isDeleting={isListItemDeleting}
+                onToggle={() =>
+                    handleToggleListItem(listItem.id, listItem.is_completed)
+                }
+                onEdit={() =>
+                    handleStartEditingListItem(listItem.id, listItem.name)
+                }
+                onDelete={() =>
+                    handleDeleteListItem(listItem.id, listItem.name)
+                }
+            />
+        );
+    };
+
     return (
         <View style={styles.container}>
-            <CreateListItem
-                name={newListItemName}
-                isCreating={isCreating}
-                error={createError}
-                onChangeName={setNewListItemName}
-                onCreate={handleCreateListItem}
-            />
-
             {updateListItemError && (
                 <Text style={styles.error}>{updateListItemError.message}</Text>
             )}
@@ -137,71 +179,92 @@ export function ListItems({ listId }: ListItemsProps) {
                 <Text style={styles.error}>{deleteListItemError.message}</Text>
             )}
 
-            <View style={styles.listItems}>
-                {listItems.map((listItem) => {
-                    const isEditing = editingListItemId === listItem.id;
+            {isCreateVisible && (
+                <View style={styles.create}>
+                    <CreateListItem
+                        name={newListItemName}
+                        isCreating={isCreating}
+                        error={createError}
+                        onChangeName={setNewListItemName}
+                        onCreate={handleCreateListItem}
+                    />
 
-                    if (isEditing) {
-                        return (
-                            <EditListItem
-                                key={listItem.id}
-                                name={editingListItemName}
-                                isUpdating={isListItemUpdating}
-                                onChangeName={setEditingListItemName}
-                                onCancel={handleCancelEditingListItem}
-                                onSave={handleSaveEditingListItem}
-                            />
-                        );
-                    }
+                    <Pressable
+                        style={styles.cancelCreateButton}
+                        onPress={handleCancelCreateListItem}
+                        disabled={isCreating}
+                    >
+                        <Text style={styles.cancelCreateText}>Cancel</Text>
+                    </Pressable>
+                </View>
+            )}
 
-                    return (
-                        <ListItem
-                            key={listItem.id}
-                            listItem={listItem}
-                            isUpdating={isListItemUpdating}
-                            isDeleting={isListItemDeleting}
-                            onToggle={() =>
-                                handleToggleListItem(
-                                    listItem.id,
-                                    listItem.is_completed
-                                )
-                            }
-                            onEdit={() =>
-                                handleStartEditingListItem(
-                                    listItem.id,
-                                    listItem.name
-                                )
-                            }
-                            onDelete={() =>
-                                handleDeleteListItem(listItem.id, listItem.name)
-                            }
-                        />
-                    );
-                })}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>ACTIVE</Text>
 
-                {listItems.length === 0 && (
-                    <Text style={styles.empty}>No list items yet.</Text>
-                )}
+                <View style={styles.items}>
+                    {activeItems.map(renderListItem)}
+
+                    {activeItems.length === 0 && (
+                        <Text style={styles.empty}>No active items.</Text>
+                    )}
+                </View>
             </View>
+
+            {finishedItems.length > 0 && (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>FINISHED</Text>
+
+                    <View style={styles.items}>
+                        {finishedItems.map(renderListItem)}
+                    </View>
+                </View>
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        gap: 24,
+        gap: 32,
     },
 
-    listItems: {
+    section: {
         gap: 12,
+    },
+
+    sectionTitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        letterSpacing: 0.8,
+        color: '#777777',
+    },
+
+    items: {
+        gap: 4,
+    },
+
+    empty: {
+        fontSize: 15,
+        color: '#999999',
+        paddingVertical: 8,
+    },
+
+    create: {
+        gap: 8,
+    },
+
+    cancelCreateButton: {
+        alignSelf: 'flex-start',
+        paddingVertical: 4,
+    },
+
+    cancelCreateText: {
+        fontSize: 14,
+        color: '#777777',
     },
 
     error: {
         color: '#D32F2F',
-        marginBottom: 16,
-    },
-
-    empty: {
-        color: '#666666',
     },
 });

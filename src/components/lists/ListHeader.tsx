@@ -1,266 +1,129 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
+import { useRef } from 'react';
+import {
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+    type View as ViewType,
+} from 'react-native';
 
-import { SharedWithModal } from '@/components/lists/SharedWithModal';
-import { useListMembership } from '@/hooks/useListMembership';
-import { useAuth } from '@/providers/AuthProvider';
 import type { List } from '@/types/List';
-import { confirmAction } from '@/utils/confirmation';
+import { formatRelativeTime } from '@/utils/formatRelativeTime';
+
+export type MenuAnchor = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
 
 type ListHeaderProps = {
     list: List;
-    isUpdating: boolean;
-    isDeleting: boolean;
-    deleteError: Error | null;
-    onEdit: () => void;
-    onDelete: () => void;
+    onMenuPress: (anchor: MenuAnchor) => void;
 };
 
-export function ListHeader({
-    list,
-    isUpdating,
-    isDeleting,
-    deleteError,
-    onEdit,
-    onDelete,
-}: ListHeaderProps) {
-    const { user } = useAuth();
-    const {
-        memberRole,
-        sharedMembers,
-        removeMember,
-        isRemovingMember,
-        notifyMembers,
-        isNotifying,
-        notifyError,
-    } = useListMembership(list.id, user?.id);
-    const [isSharedWithModalVisible, setIsSharedWithModalVisible] =
-        useState(false);
-    const [notifySuccessMessage, setNotifySuccessMessage] = useState<
-        string | null
-    >(null);
+export function ListHeader({ list, onMenuPress }: ListHeaderProps) {
+    const menuButtonRef = useRef<ViewType>(null);
 
-    const isOwner = memberRole === 'owner';
-
-    const handleRemoveMember = (userId: string, email: string) => {
-        confirmAction({
-            title: 'Remove member',
-            message: `Are you sure you want to remove "${email}"?`,
-            confirmText: 'Remove',
-            onConfirm: async () => {
-                try {
-                    await removeMember(userId);
-                } catch (error) {
-                    console.error('Failed to remove member:', error);
-                }
-            },
+    const handleMenuPress = () => {
+        menuButtonRef.current?.measureInWindow((x, y, width, height) => {
+            onMenuPress({
+                x,
+                y,
+                width,
+                height,
+            });
         });
     };
 
-    const handleNotifyMembers = async () => {
-        setNotifySuccessMessage(null);
-        try {
-            const result = await notifyMembers();
-            if (result && result.notifiedCount > 0) {
-                setNotifySuccessMessage(
-                    `Notification was sent (${result.notifiedCount})`
-                );
-            } else {
-                setNotifySuccessMessage(
-                    'There are no other members with registered push-tokens'
-                );
-            }
-        } catch (error) {
-            console.error('Failed to notify members:', error);
-        }
-    };
-
     return (
-        <View style={styles.listInfo}>
-            <View style={styles.listHeader}>
-                <View style={styles.listText}>
-                    <Text style={styles.listName}>{list.name}</Text>
+        <View style={styles.container}>
+            <View style={styles.navigation}>
+                <Pressable
+                    style={styles.iconButton}
+                    onPress={() => router.back()}
+                    hitSlop={12}
+                >
+                    <Ionicons name="chevron-back" size={26} color="#111111" />
+                </Pressable>
 
-                    {list.description && (
-                        <Text style={styles.listDescription}>
-                            {list.description}
-                        </Text>
-                    )}
-                </View>
-
-                <View style={styles.listActions}>
-                    <Pressable
-                        style={[
-                            styles.notifyButton,
-                            isNotifying && styles.disabledButton,
-                        ]}
-                        onPress={handleNotifyMembers}
-                        disabled={isNotifying}
-                    >
-                        <Text style={styles.notifyButtonText}>
-                            {isNotifying ? 'Notifying...' : 'Notify members'}
-                        </Text>
-                    </Pressable>
-
-                    {sharedMembers.length > 0 && (
-                        <Pressable
-                            style={styles.sharingButton}
-                            onPress={() => setIsSharedWithModalVisible(true)}
-                        >
-                            <Text style={styles.sharingButtonText}>
-                                Sharing
-                            </Text>
-                        </Pressable>
-                    )}
-
-                    <Pressable
-                        style={[
-                            styles.editListButton,
-                            (isUpdating || isDeleting) && styles.disabledButton,
-                        ]}
-                        onPress={onEdit}
-                        disabled={isUpdating || isDeleting}
-                    >
-                        <Text style={styles.editListButtonText}>Edit</Text>
-                    </Pressable>
-
-                    {isOwner && (
-                        <Pressable
-                            style={[
-                                styles.deleteListButton,
-                                isDeleting && styles.disabledButton,
-                            ]}
-                            onPress={onDelete}
-                            disabled={isDeleting}
-                        >
-                            <Text style={styles.deleteListButtonText}>
-                                {isDeleting ? 'Deleting...' : 'Delete'}
-                            </Text>
-                        </Pressable>
-                    )}
-                </View>
+                <Pressable
+                    ref={menuButtonRef}
+                    style={styles.iconButton}
+                    onPress={handleMenuPress}
+                    hitSlop={12}
+                >
+                    <Ionicons
+                        name="ellipsis-horizontal"
+                        size={24}
+                        color="#111111"
+                    />
+                </Pressable>
             </View>
 
-            {notifySuccessMessage && (
-                <Text style={styles.success}>{notifySuccessMessage}</Text>
-            )}
+            <View style={styles.listInfo}>
+                <View style={styles.titleRow}>
+                    <Text style={styles.listName}>{list.name}</Text>
 
-            {notifyError && (
-                <Text style={styles.error}>{notifyError.message}</Text>
-            )}
+                    <Text style={styles.updatedAt}>
+                        ({formatRelativeTime(list.updated_at)})
+                    </Text>
+                </View>
 
-            {deleteError && (
-                <Text style={styles.error}>{deleteError.message}</Text>
-            )}
-
-            <SharedWithModal
-                visible={isSharedWithModalVisible}
-                members={sharedMembers}
-                canRemove={isOwner}
-                isRemoving={isRemovingMember}
-                onRemoveMember={handleRemoveMember}
-                onClose={() => setIsSharedWithModalVisible(false)}
-            />
+                {list.description && (
+                    <Text style={styles.description}>{list.description}</Text>
+                )}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    listInfo: {
-        gap: 8,
-    },
-
-    listHeader: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
+    container: {
         gap: 16,
     },
 
-    listText: {
-        flex: 1,
-        gap: 8,
+    navigation: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+
+    iconButton: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    listInfo: {
+        gap: 6,
+    },
+
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        flexWrap: 'wrap',
+        gap: 6,
     },
 
     listName: {
-        fontSize: 22,
+        fontSize: 30,
+        fontWeight: '700',
+        color: '#111111',
     },
 
-    listDescription: {
+    updatedAt: {
+        fontSize: 12,
+        fontWeight: '400',
+        color: '#999999',
+    },
+
+    description: {
         fontSize: 16,
-        color: '#666666',
-    },
-
-    listActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-
-    notifyButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#388E3C',
-    },
-
-    notifyButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    editListButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#666666',
-    },
-
-    sharingButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#208AEF',
-    },
-
-    sharingButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    editListButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    deleteListButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#D32F2F',
-    },
-
-    deleteListButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    disabledButton: {
-        opacity: 0.5,
-    },
-
-    error: {
-        color: '#D32F2F',
-        marginTop: 4,
-    },
-
-    success: {
-        color: '#2E7D32',
-        marginTop: 4,
+        lineHeight: 22,
+        color: '#555555',
     },
 });
