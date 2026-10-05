@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -16,9 +17,12 @@ import { ListActionsModal } from '@/components/lists/ListActionsModal';
 import { ListHeader, type MenuAnchor } from '@/components/lists/ListHeader';
 import { ListSharingModal } from '@/components/lists/ListSharingModal';
 import { useListDetails } from '@/hooks/useListDetails';
+import { useListMembership } from '@/hooks/useListMembership';
+import { useAuth } from '@/providers/AuthProvider';
 
 export default function ListDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
+    const { user } = useAuth();
 
     const [isCreateItemVisible, setIsCreateItemVisible] = useState(false);
     const [isActionsModalVisible, setIsActionsModalVisible] = useState(false);
@@ -43,6 +47,8 @@ export default function ListDetailsScreen() {
         handleDeleteList,
     } = useListDetails(id);
 
+    const { notifyMembers, isNotifying } = useListMembership(id, user?.id);
+
     const handleOpenActions = (anchor: MenuAnchor) => {
         setMenuAnchor(anchor);
         setIsActionsModalVisible(true);
@@ -60,6 +66,38 @@ export default function ListDetailsScreen() {
     const handleOpenSharing = () => {
         setIsActionsModalVisible(false);
         setIsSharingModalVisible(true);
+    };
+
+    const handleNotifyMembers = async () => {
+        try {
+            const result = await notifyMembers();
+
+            setIsActionsModalVisible(false);
+
+            if (result.notifiedCount > 0) {
+                Alert.alert(
+                    'Notification sent',
+                    `Notification was sent to ${result.notifiedCount} ${
+                        result.notifiedCount === 1 ? 'member' : 'members'
+                    }.`
+                );
+                return;
+            }
+
+            Alert.alert(
+                'No notifications sent',
+                'There are no other members with registered push tokens.'
+            );
+        } catch (error) {
+            console.error('Failed to notify members:', error);
+
+            setIsActionsModalVisible(false);
+
+            Alert.alert(
+                'Notification failed',
+                'Failed to send notifications. Please try again.'
+            );
+        }
     };
 
     const handleDelete = () => {
@@ -111,8 +149,10 @@ export default function ListDetailsScreen() {
                         visible={isActionsModalVisible}
                         anchor={menuAnchor}
                         canManageList={memberRole === 'owner'}
+                        isNotifying={isNotifying}
                         onEdit={handleOpenEdit}
                         onSharing={handleOpenSharing}
+                        onNotify={handleNotifyMembers}
                         onDelete={handleDelete}
                         onClose={handleCloseActions}
                     />
@@ -150,22 +190,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingTop: 16,
     },
-
     loading: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
     },
-
     scrollView: {
         flex: 1,
         marginTop: 32,
     },
-
     scrollContent: {
         paddingBottom: 104,
     },
-
     addButton: {
         position: 'absolute',
         right: 24,
@@ -178,14 +214,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         elevation: 4,
     },
-
     deletingOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         backgroundColor: 'rgba(255, 255, 255, 0.7)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-
     error: {
         color: '#D32F2F',
         marginBottom: 16,
