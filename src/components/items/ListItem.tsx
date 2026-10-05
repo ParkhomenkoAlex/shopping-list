@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ListItem as ListItemType } from '@/services/ListItemService';
@@ -19,19 +20,29 @@ export function ListItem({
     onEdit,
     onDelete,
 }: ListItemProps) {
+    const isDisabled = isUpdating || isDeleting;
+
     return (
-        <View style={styles.container}>
+        <View
+            style={[
+                styles.container,
+                listItem.is_completed && styles.completedContainer,
+            ]}
+        >
             <Pressable
-                style={[
-                    styles.content,
-                    (isUpdating || isDeleting) && styles.disabled,
-                ]}
+                style={[styles.content, isDisabled && styles.disabled]}
                 onPress={onToggle}
-                disabled={isUpdating || isDeleting}
+                disabled={isDisabled}
             >
-                <Text style={styles.checkbox}>
-                    {listItem.is_completed ? '☑' : '☐'}
-                </Text>
+                <Ionicons
+                    name={
+                        listItem.is_completed
+                            ? 'checkmark-circle'
+                            : 'ellipse-outline'
+                    }
+                    size={24}
+                    color={listItem.is_completed ? '#8A8A8A' : '#208AEF'}
+                />
 
                 <Text
                     style={[
@@ -45,19 +56,21 @@ export function ListItem({
 
             <View style={styles.actions}>
                 <Pressable
-                    style={styles.editButton}
+                    style={styles.actionButton}
                     onPress={onEdit}
-                    disabled={isUpdating || isDeleting}
+                    disabled={isDisabled}
+                    hitSlop={8}
                 >
-                    <Text style={styles.editButtonText}>Edit</Text>
+                    <Ionicons name="pencil-outline" size={19} color="#666666" />
                 </Pressable>
 
                 <Pressable
-                    style={styles.deleteButton}
+                    style={styles.actionButton}
                     onPress={onDelete}
                     disabled={isDeleting}
+                    hitSlop={8}
                 >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
+                    <Ionicons name="trash-outline" size={19} color="#D32F2F" />
                 </Pressable>
             </View>
         </View>
@@ -66,66 +79,50 @@ export function ListItem({
 
 const styles = StyleSheet.create({
     container: {
+        minHeight: 52,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E8E8E8',
+    },
+
+    completedContainer: {
+        opacity: 0.65,
     },
 
     content: {
         flex: 1,
+        minHeight: 52,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        paddingVertical: 8,
-    },
-
-    disabled: {
-        opacity: 0.5,
-    },
-
-    checkbox: {
-        fontSize: 24,
+        gap: 12,
     },
 
     name: {
-        fontSize: 18,
+        flex: 1,
+        fontSize: 17,
+        color: '#111111',
     },
 
     completedName: {
+        color: '#777777',
         textDecorationLine: 'line-through',
-        color: '#888888',
     },
 
     actions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
     },
 
-    editButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#666666',
+    actionButton: {
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
-    editButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    deleteButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#D32F2F',
-    },
-
-    deleteButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
+    disabled: {
+        opacity: 0.5,
     },
 });

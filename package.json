@@ -3,6 +3,7 @@
     "main": "expo-router/entry",
     "version": "1.0.0",
     "dependencies": {
+        "@expo/vector-icons": "^15.1.1",
         "@supabase/supabase-js": "^2.116.0",
         "@tanstack/react-query": "^5.102.8",
         "expo": "~57.0.20",
@@ -35,16 +36,18 @@
         "reset-project": "node ./scripts/reset-project.js",
         "ios": "expo run:ios",
         "web": "expo start --web",
+        "local": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_8'",
+        "local:pixel9": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_9 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist.local; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist.local; done'",
+        "local:pixel10": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_10 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist.local; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist.local; done'",
+        "dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_8'",
+        "dev:pixel9": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_9 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist.dev; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist.dev; done'",
+        "dev:pixel10": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_10 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist.dev; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist.dev; done'",
+        "prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_8'",
+        "prod:pixel9": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_9 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist; done'",
+        "prod:pixel10": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_10 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist; done'",
         "lint": "expo lint",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "local": "dotenv -e .env.local -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
-        "local:pixel9": "adb -s emulator-5556 install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s emulator-5556 reverse tcp:8081 tcp:8081 && adb -s emulator-5556 shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\"",
-        "local:pixel10": "adb -s emulator-5558 install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s emulator-5558 reverse tcp:8081 tcp:8081 && adb -s emulator-5558 shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\"",
-        "dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
-        "dev:pixel9": "adb -s emulator-5556 install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s emulator-5556 reverse tcp:8081 tcp:8081 && adb -s emulator-5556 shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\"",
-        "dev:pixel10": "adb -s emulator-5558 install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s emulator-5558 reverse tcp:8081 tcp:8081 && adb -s emulator-5558 shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\"",
-        "prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android'",
         "db:status": "supabase status",
         "db:migration:new": "supabase migration new",
         "db:migration:up": "supabase migration up",
@@ -52,7 +55,7 @@
         "db:types": "supabase gen types typescript --local > src/types/database/database.types.ts",
         "build:apk:dev": "dotenv -e .env.development -- cross-env EXPO_NO_DOTENV=1 sh -c 'BUILD_NUMBER=${APP_BUILD_NUMBER:-200}; export APP_BUILD_NUMBER=$BUILD_NUMBER; expo prebuild --clean --platform android && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./SL-Dev-${BUILD_NUMBER}-v1.0.0.apk'",
         "build:apk:prod": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'BUILD_NUMBER=${APP_BUILD_NUMBER:-300}; export APP_BUILD_NUMBER=$BUILD_NUMBER; expo prebuild --clean --platform android && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./SL-Prod-${BUILD_NUMBER}-v1.0.0.apk'",
-        "env:check": "PACKAGE=$(adb shell dumpsys activity activities | grep 'ResumedActivity:' | sed -E 's/.* u0 ([a-zA-Z0-9._]+)\\/.*/\\1/'); case \"$PACKAGE\" in com.anonymous.shoppinglist.local) ENV=Local;; com.anonymous.shoppinglist.dev) ENV=Dev;; com.anonymous.shoppinglist) ENV=Prod;; *) ENV=Unknown;; esac; echo \"Environment : $ENV\"; echo \"Package     : $PACKAGE\""
+        "env:check": "for DEVICE in $(adb devices | awk '/emulator-/ {print $1}'); do AVD=$(adb -s \"$DEVICE\" emu avd name 2>/dev/null | head -n 1); PACKAGE=$(adb -s \"$DEVICE\" shell dumpsys activity activities | grep 'ResumedActivity:' | head -n 1 | sed -E 's/.* u0 ([a-zA-Z0-9._]+)\\/.*/\\1/'); case \"$PACKAGE\" in com.anonymous.shoppinglist.local) ENV=Local;; com.anonymous.shoppinglist.dev) ENV=Dev;; com.anonymous.shoppinglist) ENV=Prod;; *) ENV=Unknown;; esac; echo \"$AVD ($DEVICE) : $ENV [$PACKAGE]\"; done"
     },
     "private": true
 }
