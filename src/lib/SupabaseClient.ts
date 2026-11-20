@@ -4,6 +4,8 @@ import 'expo-sqlite/localStorage/install';
 import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 
+import '@/lib/Monitoring';
+
 import type { Database } from '@/types/database/database.types';
 
 type AppExtra = {

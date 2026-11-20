@@ -32,6 +32,8 @@ const config: ExpoConfig = {
         supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
         supabasePublishableKey:
             process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+        // DSN is public client configuration; SENTRY_AUTH_TOKEN must never be here.
+        sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
         eas: {
             projectId: '5e0f28d0-dae3-4248-9ffa-4625c583e3df',
         },
@@ -72,6 +74,13 @@ const config: ExpoConfig = {
         'expo-router',
         'expo-sqlite',
         'expo-notifications',
+        [
+            '@sentry/react-native',
+            {
+                organization: process.env.SENTRY_ORG,
+                project: process.env.SENTRY_PROJECT,
+            },
+        ],
         [
             'expo-splash-screen',
             {

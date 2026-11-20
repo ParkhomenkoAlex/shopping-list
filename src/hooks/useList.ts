@@ -17,9 +17,10 @@ export function useList(id?: string) {
     const userId = user?.id;
 
     const {
-        data: lists = [],
+        data: listsData,
         isLoading: isListsLoading,
         error: listsError,
+        refetch: refetchLists,
     } = useQuery({
         queryKey: ['lists'],
         queryFn: getLists,
@@ -30,6 +31,7 @@ export function useList(id?: string) {
         data: list = null,
         isLoading: isListLoading,
         error: listError,
+        refetch: refetchList,
     } = useQuery({
         queryKey: ['list', id],
         queryFn: () => getListById(id!),
@@ -151,13 +153,16 @@ export function useList(id?: string) {
     });
 
     return {
-        lists,
+        lists: listsData ?? [],
+        hasListsData: listsData !== undefined,
         isListsLoading,
         listsError,
+        refetchLists,
 
         list,
         isListLoading,
         listError,
+        refetchList,
 
         createList: createListMutation.mutateAsync,
         isCreating: createListMutation.isPending,
