@@ -1587,6 +1587,8 @@ This is intended only for an explicitly non-monitoring build; it does not silent
 
 After a build with upload enabled, open Sentry project `shopping-list` and verify the matching release, dist, artifact bundle, and Debug IDs. Then send a controlled Development-only error and confirm that its stack resolves to original TypeScript files.
 
+**Current verification status:** Development source-map delivery and JavaScript symbolication were confirmed with `SL-Dev-201-v1.0.0.apk` (`shopping-list@1.0.0`, dist `201`). `SL-Dev-202-v1.0.0.apk` was then built, installed, launched, and confirmed to open My Lists with saved authentication after removal of the temporary test control. This evidence does not establish Production delivery, native crash reporting, or physical-device coverage.
+
 ## Release APK behavior
 
 The APK contains the JavaScript bundle and does not require Metro to be running.
