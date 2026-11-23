@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 import { CreateListItem } from '@/components/items/CreateListItem';
 import { EditListItem } from '@/components/items/EditListItem';
@@ -20,6 +26,9 @@ export function ListItems({
 }: ListItemsProps) {
     const {
         listItems,
+        isLoading,
+        error: listItemsError,
+        refetchListItems,
         isCreating,
         createError,
         createListItem,
@@ -171,6 +180,17 @@ export function ListItems({
 
     return (
         <View style={styles.container}>
+            {isLoading && <ActivityIndicator />}
+            {listItemsError && (
+                <View>
+                    <Text style={styles.error}>
+                        Не удалось загрузить элементы списка.
+                    </Text>
+                    <Pressable onPress={() => void refetchListItems()}>
+                        <Text style={styles.retry}>Повторить</Text>
+                    </Pressable>
+                </View>
+            )}
             {updateListItemError && (
                 <Text style={styles.error}>{updateListItemError.message}</Text>
             )}
@@ -267,4 +287,5 @@ const styles = StyleSheet.create({
     error: {
         color: '#D32F2F',
     },
+    retry: { color: '#208AEF', fontSize: 15, fontWeight: '600', marginTop: 8 },
 });

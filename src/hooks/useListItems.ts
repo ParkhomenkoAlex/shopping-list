@@ -16,6 +16,7 @@ export function useListItems(listId: string | undefined) {
         data: listItems = [],
         isLoading: isListItemsLoading,
         error: listItemsError,
+        refetch: refetchListItems,
     } = useQuery({
         queryKey: ['list-items', listId],
         queryFn: () => getListItems(listId!),
@@ -92,6 +93,7 @@ export function useListItems(listId: string | undefined) {
         listItems,
         isLoading: isListItemsLoading,
         error: listItemsError,
+        refetchListItems,
 
         createListItem: createListItemMutation.mutateAsync,
         isCreating: createListItemMutation.isPending,

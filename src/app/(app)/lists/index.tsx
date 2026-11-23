@@ -5,16 +5,23 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    View,
 } from 'react-native';
+import { useNetInfo } from '@react-native-community/netinfo';
 
+import { BuildVersionLabel } from '@/components/BuildVersionLabel';
 import { CreateList } from '@/components/lists/CreateList';
 import { ListCard } from '@/components/lists/ListCard';
 import { useList } from '@/hooks/useList';
 import { useAuth } from '@/providers/AuthProvider';
 
 export default function ListsScreen() {
-    const { lists, isListsLoading, listsError } = useList();
-    const { signOut } = useAuth();
+    const { lists, hasListsData, isListsLoading, listsError, refetchLists } =
+        useList();
+    const { signOut, user } = useAuth();
+    const netInfo = useNetInfo();
+    const isOffline =
+        netInfo.isConnected === false && netInfo.isInternetReachable !== true;
 
     const handleSignOut = async () => {
         try {
@@ -27,11 +34,31 @@ export default function ListsScreen() {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>My Lists</Text>
+            <View style={styles.metadata}>
+                <BuildVersionLabel style={styles.buildVersion} />
+                {user?.email && (
+                    <Text style={styles.userEmail}>{user.email}</Text>
+                )}
+            </View>
 
-            {isListsLoading && <ActivityIndicator />}
+            {isListsLoading && !hasListsData && <ActivityIndicator />}
 
-            {listsError && (
-                <Text style={styles.error}>{listsError.message}</Text>
+            {isOffline && !hasListsData && (
+                <Text style={styles.offline}>
+                    Нет подключения к интернету. Подключитесь к сети, чтобы
+                    загрузить списки.
+                </Text>
+            )}
+
+            {listsError && !isOffline && (
+                <>
+                    <Text style={styles.error}>
+                        Не удалось загрузить списки.
+                    </Text>
+                    <Pressable onPress={() => void refetchLists()}>
+                        <Text style={styles.retry}>Повторить</Text>
+                    </Pressable>
+                </>
             )}
 
             {!isListsLoading &&
@@ -51,9 +78,13 @@ export default function ListsScreen() {
                     />
                 ))}
 
-            {!isListsLoading && !listsError && lists.length === 0 && (
-                <Text style={styles.empty}>No lists yet.</Text>
-            )}
+            {!isListsLoading &&
+                !listsError &&
+                !isOffline &&
+                hasListsData &&
+                lists.length === 0 && (
+                    <Text style={styles.empty}>No lists yet.</Text>
+                )}
 
             <CreateList />
 
@@ -73,11 +104,39 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '600',
+        marginBottom: 4,
+    },
+
+    metadata: {
         marginBottom: 24,
+    },
+
+    buildVersion: {
+        color: '#777777',
+        fontSize: 13,
+        lineHeight: 18,
+    },
+
+    userEmail: {
+        color: '#777777',
+        fontSize: 13,
+        lineHeight: 18,
     },
 
     error: {
         color: '#D32F2F',
+        marginBottom: 16,
+    },
+    retry: {
+        color: '#208AEF',
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 16,
+    },
+
+    offline: {
+        color: '#7A5200',
+        lineHeight: 22,
         marginBottom: 16,
     },
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/providers/AuthProvider';
+import { BuildVersionLabel } from '@/components/BuildVersionLabel';
 
 export default function AuthScreen() {
     const { signIn, signUp, isLoading } = useAuth();
@@ -48,6 +49,8 @@ export default function AuthScreen() {
             <Text style={styles.title}>
                 {isRegistering ? 'Create account' : 'Sign in'}
             </Text>
+
+            <BuildVersionLabel style={styles.buildVersion} />
 
             <TextInput
                 style={styles.input}
@@ -113,6 +116,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '600',
+        marginBottom: 4,
+    },
+
+    buildVersion: {
+        color: '#777777',
+        fontSize: 13,
         marginBottom: 24,
     },
 

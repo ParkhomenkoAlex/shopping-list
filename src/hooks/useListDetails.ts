@@ -29,7 +29,8 @@ export function useListDetails(id: string) {
     const [editListForm, setEditListForm] = useState<ListForm>(initialListForm);
 
     useEffect(() => {
-        if (!isListLoading && list === null) {
+        // Do not navigate away merely because an offline request failed.
+        if (!isListLoading && !listError && list === null) {
             router.replace('/lists');
             return;
         }
@@ -37,17 +38,22 @@ export function useListDetails(id: string) {
         if (
             !isListLoading &&
             !isMemberRoleLoading &&
+            !memberRoleError &&
             user &&
             memberRole === null
         ) {
             router.replace('/lists');
             return;
         }
-
-        if (listError) {
-            router.replace('/lists');
-        }
-    }, [isListLoading, list, isMemberRoleLoading, user, memberRole, listError]);
+    }, [
+        isListLoading,
+        list,
+        isMemberRoleLoading,
+        user,
+        memberRole,
+        listError,
+        memberRoleError,
+    ]);
 
     const handleOpenEditListModal = () => {
         if (!list) {

@@ -697,22 +697,22 @@ The APK filename uses the same information.
 The project uses:
 
 ```text
-SL-{Environment}-build-{BuildNumber}-v{Version}.apk
+SL-{Environment}-{BuildNumber}-v{Version}.apk
 ```
 
 Examples:
 
 ```text
-SL-Dev-build-200-v1.0.0.apk
-SL-Dev-build-206-v1.0.0.apk
-SL-Prod-build-300-v1.0.0.apk
-SL-Prod-build-301-v1.0.0.apk
+SL-Dev-200-v1.0.0.apk
+SL-Dev-206-v1.0.0.apk
+SL-Prod-300-v1.0.0.apk
+SL-Prod-301-v1.0.0.apk
 ```
 
 The application also displays the same identifier inside the main screen:
 
 ```text
-SL-Dev-build-206-v1.0.0
+SL-Dev-206-v1.0.0
 ```
 
 This makes it easy to identify exactly which build is installed.
@@ -750,7 +750,7 @@ the resulting build number is:
 The resulting APK is:
 
 ```text
-SL-Dev-build-206-v1.0.0.apk
+SL-Dev-206-v1.0.0.apk
 ```
 
 Production works the same way:
@@ -1520,202 +1520,154 @@ Check:
 
 # 34. Building Standalone APKs
 
-The project provides local release APK builds.
-
-The APK names use the same convention as GitHub Actions.
+The project provides local Android release APK builds. Each build runs Expo prebuild, Gradle `assembleRelease`, and copies the result to the repository root.
 
 ```text
-SL-{Environment}-build-{BuildNumber}-v{Version}.apk
+SL-{Environment}-{BuildNumber}-v{Version}.apk
 ```
+
+The version is resolved from the final Expo config (`expo config --type public --json`). The build number is used as Android `versionCode`, Sentry `dist`, and in the APK filename.
 
 ---
 
 ## Development APK
 
-Run:
-
 ```bash
 pnpm build:apk:dev
 ```
 
-The default local Development build number is:
-
-```text
-200
-```
-
-Output:
-
-```text
-SL-Dev-build-200-v1.0.0.apk
-```
-
----
+The default Development build number is `200`, producing `SL-Dev-200-v1.0.0.apk`.
 
 ## Production APK
-
-Run:
 
 ```bash
 pnpm build:apk:prod
 ```
 
-The default local Production build number is:
-
-```text
-300
-```
-
-Output:
-
-```text
-SL-Prod-build-300-v1.0.0.apk
-```
-
----
+The default Production build number is `300`, producing `SL-Prod-300-v1.0.0.apk`.
 
 ## Build with a specific build number
 
-Development:
+```bash
+APP_BUILD_NUMBER=202 pnpm build:apk:dev
+APP_BUILD_NUMBER=202 pnpm build:apk:prod
+```
+
+The same build number becomes Android `versionCode`, Sentry `dist`, and part of the APK name.
+
+## Sentry source maps and Keychain token
+
+Development and Production builds upload source maps by default. The build script sets:
+
+```text
+SENTRY_ORG=alex-org-e0
+SENTRY_PROJECT=shopping-list
+SENTRY_RELEASE=shopping-list@<Expo version>
+SENTRY_DIST=<APP_BUILD_NUMBER>
+```
+
+Store the private Sentry auth token in the macOS login Keychain once. Use service `shopping-list-sentry-auth-token` and your macOS `$USER` as account:
 
 ```bash
-APP_BUILD_NUMBER=206 pnpm build:apk:dev
+security add-generic-password -U \
+  -a "$USER" \
+  -s "shopping-list-sentry-auth-token" \
+  -w
 ```
 
-Output:
+The command prompts for the token. Never put it in `.env`, `package.json`, `sentry.properties`, shell history, or an `EXPO_PUBLIC_*` variable. A caller-provided `SENTRY_AUTH_TOKEN` takes precedence over Keychain lookup, which is useful for CI.
 
-```text
-SL-Dev-build-206-v1.0.0.apk
-```
-
-Production:
+If neither the environment variable nor the Keychain item exists, a Dev/Prod build stops before `expo prebuild` with setup instructions. To deliberately build without source-map upload, make the opt-out explicit:
 
 ```bash
-APP_BUILD_NUMBER=301 pnpm build:apk:prod
+SENTRY_DISABLE_AUTO_UPLOAD=true pnpm build:apk:dev
 ```
 
-Output:
+This is intended only for an explicitly non-monitoring build; it does not silently bypass source-map upload. The build uses quiet Gradle logging to prevent the Sentry Gradle plugin from printing CLI arguments containing the token. Do not add `--info`, `--debug`, or `set -x` to this workflow.
 
-```text
-SL-Prod-build-301-v1.0.0.apk
-```
+After a build with upload enabled, open Sentry project `shopping-list` and verify the matching release, dist, artifact bundle, and Debug IDs. Then send a controlled Development-only error and confirm that its stack resolves to original TypeScript files.
 
-The same build number is also passed into `app.config.ts` and becomes the Android `versionCode`.
-
----
-
-## Local vs GitHub Actions builds
-
-Local builds use:
-
-```text
-Dev  → 200 by default
-Prod → 300 by default
-```
-
-GitHub Actions calculates the build number automatically:
-
-```text
-Dev  → 200 + GITHUB_RUN_NUMBER
-Prod → 300 + GITHUB_RUN_NUMBER
-```
-
-Therefore a GitHub Development build might be:
-
-```text
-SL-Dev-build-206-v1.0.0.apk
-```
-
-while a GitHub Production build might be:
-
-```text
-SL-Prod-build-301-v1.0.0.apk
-```
-
----
+**Current verification status:** Development source-map delivery and JavaScript symbolication were confirmed with `SL-Dev-201-v1.0.0.apk` (`shopping-list@1.0.0`, dist `201`). `SL-Dev-202-v1.0.0.apk` was then built, installed, launched, and confirmed to open My Lists with saved authentication after removal of the temporary test control. This evidence does not establish Production delivery, native crash reporting, or physical-device coverage.
 
 ## Release APK behavior
 
-The APK is a release build.
-
-It contains the JavaScript bundle and does not require Metro to be running.
+The APK contains the JavaScript bundle and does not require Metro to be running.
 
 ---
 
-# 35. Installing APKs on a Physical Android Device
+# 35. Installing APKs on Android devices
 
-After building an APK:
+## Build → install → start
+
+For a Development APK:
 
 ```bash
-ls -lh *.apk
+pnpm build:apk:dev
+pnpm install:apk:dev
+pnpm start:apk:dev
 ```
 
-You can transfer the APK to the phone using a temporary local HTTP server.
+For Production, use the corresponding `:prod` commands. Starting uses the installed application's launcher activity only: it does not start Metro, Expo Dev Server, a build, or an installation.
 
----
+Check connected devices first:
 
-## Start HTTP server
+```bash
+adb devices -l
+```
+
+Install an APK matching the default build number:
+
+```bash
+pnpm install:apk:dev
+pnpm install:apk:prod
+```
+
+The commands use `adb install -r`, so they replace the installed APK without clearing application data and do not launch it. They refuse an APK whose filename does not match the requested environment.
+
+For a non-default build number, pass the same value used during the build:
+
+```bash
+APP_BUILD_NUMBER=202 pnpm install:apk:dev
+APP_BUILD_NUMBER=202 pnpm install:apk:prod
+```
+
+To install an explicit file, use `--`:
+
+```bash
+pnpm install:apk:dev -- ./SL-Dev-202-v1.0.0.apk
+```
+
+If exactly one authorized Android device is connected, it is selected automatically. With multiple devices, choose one explicitly:
+
+```bash
+ANDROID_SERIAL=emulator-5554 pnpm install:apk:dev
+ANDROID_SERIAL=emulator-5554 pnpm start:apk:dev
+```
+
+For a USB-connected physical phone, enable Developer Options and USB debugging, accept the computer's RSA prompt, then confirm it appears as `device` in `adb devices -l` before running the same install command.
+
+The install commands support a no-install check:
+
+```bash
+pnpm install:apk:dev -- --dry-run
+pnpm start:apk:dev -- --dry-run
+```
+
+If Android SDK Platform-Tools or `adb` is unavailable, install Android SDK Platform-Tools and add its directory to `PATH`, then reopen the terminal. If an APK is not found, rebuild it or pass its explicit path.
+
+## Manual transfer alternative
+
+If USB/adb installation is unavailable, after building an APK you can transfer it over a trusted local network:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Find the Mac IP:
-
-```bash
-ipconfig getifaddr en0
-```
-
-or:
-
-```bash
-ipconfig getifaddr en1
-```
-
-Suppose the result is:
-
-```text
-192.168.1.100
-```
-
-Open on the Android phone:
-
-```text
-http://192.168.1.100:8000
-```
-
-Download the required APK.
-
----
+Find the Mac IP with `ipconfig getifaddr en0` (or `en1`), open `http://<mac-ip>:8000` on the Android device, and download the required APK.
 
 ## Testing multiple APKs
 
-Because Local, Development and Production use different package IDs, they can coexist on the same phone.
-
-For example:
-
-```text
-SL-Dev-build-200-v1.0.0.apk
-SL-Prod-build-300-v1.0.0.apk
-```
-
-can be installed simultaneously.
-
-GitHub Actions builds can also be installed alongside the local builds.
-
-This makes it possible to compare:
-
-```text
-Local Dev build
-      vs
-GitHub Dev build
-
-Local Prod build
-      vs
-GitHub Prod build
-```
-
-The build identifier displayed inside the application makes it possible to determine exactly which APK is running.
+Local, Development, and Production use different package IDs, so their APKs can coexist on one device. For example, `SL-Dev-200-v1.0.0.apk` and `SL-Prod-300-v1.0.0.apk` can be installed simultaneously.
 
 ---
 
