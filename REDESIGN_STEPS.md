@@ -67,7 +67,7 @@
 - [ ] Empty list.
 - [x] Нет активных items.
 - [x] Есть только Finished items.
-- [x] Loading state.
+- [-] Loading state — частично реализован; детальный план исправлений и проверок: [`docs/LOADING_INDICATORS_PLAN.md`](docs/LOADING_INDICATORS_PLAN.md).
 - [ ] Error state + Retry.
 
 ### 9. Финальный UI Polish
