@@ -27,9 +27,11 @@ export function useListMembership(
     });
 
     const {
-        data: sharedMembers = [],
-        isLoading: isSharedMembersLoading,
+        data: sharedMembersData,
+        isPending: isSharedMembersLoading,
+        isFetching: isSharedMembersFetching,
         error: sharedMembersError,
+        refetch: refetchSharedMembers,
     } = useQuery({
         queryKey: ['list-shared-members', listId],
         queryFn: () => getSharedListMembers(listId!),
@@ -110,9 +112,13 @@ export function useListMembership(
         isMemberRoleLoading,
         memberRoleError,
 
-        sharedMembers,
+        sharedMembers: sharedMembersData ?? [],
+        hasSharedMembersData: sharedMembersData !== undefined,
         isSharedMembersLoading,
+        isSharedMembersRefetching:
+            isSharedMembersFetching && !isSharedMembersLoading,
         sharedMembersError,
+        refetchSharedMembers,
 
         addMemberByEmail: addMemberMutation.mutateAsync,
         isAddingMember: addMemberMutation.isPending,

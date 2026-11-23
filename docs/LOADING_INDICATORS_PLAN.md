@@ -36,7 +36,7 @@ implementations.
 ### LI-01 — ListItems loading, error, and empty states
 
 - **Priority:** P1
-- **Status:** Pending
+- **Status:** Needs Verification
 - **Problem:** `ListItems` renders `ActivityIndicator` for `isLoading`, but it
   also renders `No active items.` from the fallback `[]`. Thus initial loading or
   a query failure can look like a confirmed empty list.
@@ -52,14 +52,18 @@ implementations.
     - A successful empty response displays the existing empty copy.
     - Cached active/finished items stay visible through reconnect/refetch.
     - Existing Retry and create/edit/delete flows remain available as appropriate.
-- **Verification:** cold-open a list with data, with no items, and with a forced
-  request failure; repeat with slow network, airplane mode, and reconnect.
+- **Verification:** static verification is complete: the query now exposes
+  whether it has usable data, and the UI gates the spinner/error/sections on
+  that state. `tsc`, ESLint, Prettier, and `git diff --check` must pass. Pending
+  manual Android verification: cold-open a list with data, with no items, and
+  with a forced request failure; repeat with slow network, airplane mode, and
+  reconnect.
 - **Dependencies:** none.
 
 ### LI-02 — List-details error recovery
 
 - **Priority:** P1
-- **Status:** Pending
+- **Status:** Needs Verification
 - **Problem:** the details route displays a raw query error and has no Retry or
   route-specific offline explanation.
 - **Relevant files:** `src/app/(app)/lists/[id].tsx`, `src/hooks/useList.ts`.
@@ -73,14 +77,18 @@ implementations.
     - Retry works without navigating away.
     - Offline does not imply that the list was deleted or inaccessible.
     - Cached list details remain visible during background refetch.
-- **Verification:** open an existing and a missing list; force ordinary error,
-  offline error, slow response, reconnect, and Retry; verify deep-link routing.
+- **Verification:** static implementation is complete: the hook distinguishes
+  cached data from an initial request, and the screen uses the existing refetch
+  function with a disabled pending Retry action. `tsc`, ESLint, Prettier, and
+  `git diff --check` must pass. Pending manual Android verification: open an
+  existing and a missing list; force ordinary error, offline error, slow
+  response, reconnect, and Retry; verify deep-link routing.
 - **Dependencies:** LI-01 is not required.
 
 ### LI-03 — Sharing Modal error recovery
 
 - **Priority:** P1
-- **Status:** Pending
+- **Status:** Needs Verification
 - **Problem:** loading shared members shows a spinner and error, but the hook
   does not expose a refetch action; the user must close and reopen the modal to
   retry.
@@ -93,14 +101,17 @@ implementations.
     - Failed member loading has a Retry action in the same modal.
     - Retry does not close the modal or clear the pending add-member form.
     - Add/remove member mutation feedback keeps working.
-- **Verification:** force a member-query failure, Retry in place, then add and
-  remove a member under normal and slow networks.
+- **Verification:** static implementation is complete: the hook exposes member
+  data presence and refetch state, while the modal retries in place without
+  showing raw request errors. `tsc`, ESLint, Prettier, and `git diff --check`
+  must pass. Pending manual Android verification: force a member-query failure,
+  Retry in place, then add and remove a member under normal and slow networks.
 - **Dependencies:** none.
 
 ### LI-04 — Per-item pending states
 
 - **Priority:** P1
-- **Status:** Pending
+- **Status:** Needs Verification
 - **Problem:** `useListItems` exposes a single mutation-level `isUpdating` and
   `isDeleting`. Consequently `ListItems` disables every shopping item while one
   item is updated or deleted; the affected row has no precise progress signal.
@@ -115,8 +126,12 @@ implementations.
     - Other items remain usable while one item saves or deletes.
     - The pending row visibly communicates progress.
     - Errors still associate with the operation without breaking realtime updates.
-- **Verification:** under throttled network toggle, edit, and delete one item;
-  attempt actions on another item; retry after error and verify realtime update.
+- **Verification:** static implementation is complete: component-level pending
+  operations are keyed by item ID, with a synchronous ref guard against repeated
+  presses. `tsc`, ESLint, Prettier, and `git diff --check` must pass. Pending
+  manual Android verification: under throttled network toggle, edit, and delete
+  one item; attempt actions on another item; retry after error and verify
+  realtime update.
 - **Dependencies:** LI-01 should be implemented first to make item-state tests
   unambiguous.
 
@@ -125,7 +140,7 @@ implementations.
 ### LI-05 — Logout pending state
 
 - **Priority:** P2
-- **Status:** Pending
+- **Status:** Needs Verification
 - **Problem:** the logout action has no local pending state; repeated taps can
   start concurrent sign-out requests and failures are only logged to console.
 - **Relevant files:** `src/app/(app)/lists/index.tsx`.
@@ -133,14 +148,18 @@ implementations.
   show concise pending copy, and display a user-friendly failure message.
 - **Acceptance criteria:** one sign-out request per user action; no duplicate
   request while pending; a failed sign-out is understandable and retryable.
-- **Verification:** throttle/fail sign-out and tap repeatedly; then verify a
-  successful sign-out still reaches the unauthenticated route.
+- **Verification:** static implementation is complete: a synchronous ref guards
+  rapid presses, the action is disabled while pending, and a generic error is
+  rendered after failure. `tsc`, ESLint, Prettier, and `git diff --check` must
+  pass. Pending manual Android verification: throttle/fail sign-out and tap
+  repeatedly; then verify a successful sign-out still reaches the
+  unauthenticated route.
 - **Dependencies:** none.
 
 ### LI-06 — Per-member pending state
 
 - **Priority:** P2
-- **Status:** Pending
+- **Status:** Needs Verification
 - **Problem:** removing one member disables all remove controls because the
   modal uses one `isRemovingMember` flag.
 - **Relevant files:** `src/components/lists/ListSharingModal.tsx`.
@@ -148,8 +167,12 @@ implementations.
   feedback only for that row, while preventing a duplicate removal of it.
 - **Acceptance criteria:** unrelated member controls remain available; the
   target row is visibly pending; add-member behavior is unchanged.
-- **Verification:** remove one member over slow network and interact with a
-  different member; verify success and failure paths.
+- **Verification:** static implementation is complete: component-level pending
+  member IDs permit independent removals while a ref prevents duplicate
+  confirmation actions for the same member. `tsc`, ESLint, Prettier, and
+  `git diff --check` must pass. Pending manual Android verification: remove one
+  member over slow network and interact with a different member; verify success
+  and failure paths.
 - **Dependencies:** LI-03 is recommended first.
 
 ### LI-07 — Duplicate navigation prevention
@@ -160,9 +183,16 @@ implementations.
   routes. This is a hypothesis, not a confirmed defect.
 - **Relevant files:** `src/components/lists/ListCard.tsx`,
   `src/app/(app)/lists/index.tsx`.
+- **Static investigation:** `ListCard` invokes its supplied `onPress` without a
+  local lock, and `ListsScreen` calls `router.push` for every press. In the
+  installed Expo Router SDK 57, each `router.push` adds a `PUSH` action to the
+  routing queue; this path has no application-level deduplication. This is a
+  plausible risk, not a confirmed user-visible defect without device
+  reproduction.
 - **Proposed implementation:** do not change code until reproduced. If it is
-  visible in practice, choose the smallest route-level or temporary
-  press-locking solution that preserves deep links and normal back navigation.
+  visible in practice, compare `router.navigate` with a narrowly scoped
+  press-locking solution. Select only an option that preserves deep links and
+  expected back-stack behavior.
 - **Acceptance criteria:** only after reproduction is confirmed; a rapid tap
   must not create duplicate detail screens or block a legitimate later tap.
 - **Verification:** rapidly tap one and multiple cards on a physical/emulated
@@ -225,12 +255,12 @@ implementations.
 
 ## Recommended implementation order
 
-1. **LI-01** — establish correct mutually-exclusive item query states.
-2. **LI-02** and **LI-03** — add targeted recovery paths without changing query
-   or navigation architecture.
-3. **LI-04** — introduce per-item pending tracking after the item display-state
-   logic is stable.
+1. **LI-01** — implemented; Android verification remains pending.
+2. **LI-02** and **LI-03** — implemented; Android verification remains
+   pending.
+3. **LI-04** — implemented; Android verification remains pending.
 4. Run the required parts of **LI-09** on Android emulator.
-5. Consider **LI-05** and **LI-06** as small optional follow-ups.
+5. **LI-05** and **LI-06** are implemented; Android verification remains
+   pending.
 6. Run **LI-07** only as a manual investigation; implement only if reproduced.
 7. Keep **LI-08** deferred until the product chooses offline-mutation semantics.

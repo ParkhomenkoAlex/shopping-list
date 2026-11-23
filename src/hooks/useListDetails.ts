@@ -11,8 +11,11 @@ export function useListDetails(id: string) {
     const { user } = useAuth();
     const {
         list,
+        hasListData,
         isListLoading,
+        isListRefetching,
         listError,
+        refetchList,
         updateList,
         isUpdating,
         updateError,
@@ -120,8 +123,11 @@ export function useListDetails(id: string) {
 
     return {
         list,
+        hasListData,
         isListLoading,
+        isListRefetching,
         listError,
+        refetchList,
         memberRole,
         isMemberRoleLoading,
         memberRoleError,

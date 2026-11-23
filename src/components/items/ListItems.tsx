@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
@@ -26,6 +26,7 @@ export function ListItems({
 }: ListItemsProps) {
     const {
         listItems,
+        hasListItemsData,
         isLoading,
         error: listItemsError,
         refetchListItems,
@@ -33,10 +34,8 @@ export function ListItems({
         createError,
         createListItem,
         updateListItem,
-        isUpdating: isListItemUpdating,
         updateError: updateListItemError,
         deleteListItem,
-        isDeleting: isListItemDeleting,
         deleteError: deleteListItemError,
     } = useListItems(listId);
 
@@ -46,10 +45,37 @@ export function ListItems({
         null
     );
     const [editingListItemName, setEditingListItemName] = useState('');
+    const pendingItemOperationsRef = useRef<
+        Map<string, 'updating' | 'deleting'>
+    >(new Map());
+    const [pendingItemOperations, setPendingItemOperations] = useState<
+        Map<string, 'updating' | 'deleting'>
+    >(() => new Map());
 
     const activeItems = listItems.filter((listItem) => !listItem.is_completed);
 
     const finishedItems = listItems.filter((listItem) => listItem.is_completed);
+
+    const isInitialLoading = isLoading && !hasListItemsData;
+    const hasInitialLoadError = Boolean(listItemsError) && !hasListItemsData;
+
+    const startItemOperation = (
+        listItemId: string,
+        operation: 'updating' | 'deleting'
+    ) => {
+        if (pendingItemOperationsRef.current.has(listItemId)) {
+            return false;
+        }
+
+        pendingItemOperationsRef.current.set(listItemId, operation);
+        setPendingItemOperations(new Map(pendingItemOperationsRef.current));
+        return true;
+    };
+
+    const finishItemOperation = (listItemId: string) => {
+        pendingItemOperationsRef.current.delete(listItemId);
+        setPendingItemOperations(new Map(pendingItemOperationsRef.current));
+    };
 
     const handleCreateListItem = async () => {
         const name = newListItemName.trim();
@@ -77,6 +103,10 @@ export function ListItems({
         listItemId: string,
         isCompleted: boolean
     ) => {
+        if (!startItemOperation(listItemId, 'updating')) {
+            return;
+        }
+
         try {
             await updateListItem({
                 id: listItemId,
@@ -86,6 +116,8 @@ export function ListItems({
             });
         } catch (error) {
             console.error('Failed to update list item:', error);
+        } finally {
+            finishItemOperation(listItemId);
         }
     };
 
@@ -93,6 +125,10 @@ export function ListItems({
         listItemId: string,
         listItemName: string
     ) => {
+        if (pendingItemOperationsRef.current.has(listItemId)) {
+            return;
+        }
+
         setEditingListItemId(listItemId);
         setEditingListItemName(listItemName);
     };
@@ -113,6 +149,10 @@ export function ListItems({
             return;
         }
 
+        if (!startItemOperation(editingListItemId, 'updating')) {
+            return;
+        }
+
         try {
             await updateListItem({
                 id: editingListItemId,
@@ -125,6 +165,8 @@ export function ListItems({
             setEditingListItemName('');
         } catch (error) {
             console.error('Failed to update list item:', error);
+        } finally {
+            finishItemOperation(editingListItemId);
         }
     };
 
@@ -134,10 +176,16 @@ export function ListItems({
             message: `Are you sure you want to delete "${listItemName}"?`,
             confirmText: 'Delete',
             onConfirm: async () => {
+                if (!startItemOperation(listItemId, 'deleting')) {
+                    return;
+                }
+
                 try {
                     await deleteListItem(listItemId);
                 } catch (error) {
                     console.error('Failed to delete list item:', error);
+                } finally {
+                    finishItemOperation(listItemId);
                 }
             },
         });
@@ -145,13 +193,16 @@ export function ListItems({
 
     const renderListItem = (listItem: (typeof listItems)[number]) => {
         const isEditing = editingListItemId === listItem.id;
+        const pendingOperation = pendingItemOperations.get(listItem.id);
+        const isUpdating = pendingOperation === 'updating';
+        const isDeleting = pendingOperation === 'deleting';
 
         if (isEditing) {
             return (
                 <EditListItem
                     key={listItem.id}
                     name={editingListItemName}
-                    isUpdating={isListItemUpdating}
+                    isUpdating={isUpdating}
                     onChangeName={setEditingListItemName}
                     onCancel={handleCancelEditingListItem}
                     onSave={handleSaveEditingListItem}
@@ -163,8 +214,8 @@ export function ListItems({
             <ListItem
                 key={listItem.id}
                 listItem={listItem}
-                isUpdating={isListItemUpdating}
-                isDeleting={isListItemDeleting}
+                isUpdating={isUpdating}
+                isDeleting={isDeleting}
                 onToggle={() =>
                     handleToggleListItem(listItem.id, listItem.is_completed)
                 }
@@ -180,8 +231,9 @@ export function ListItems({
 
     return (
         <View style={styles.container}>
-            {isLoading && <ActivityIndicator />}
-            {listItemsError && (
+            {isInitialLoading && <ActivityIndicator />}
+
+            {hasInitialLoadError && (
                 <View>
                     <Text style={styles.error}>
                         Не удалось загрузить элементы списка.
@@ -219,26 +271,32 @@ export function ListItems({
                 </View>
             )}
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>ACTIVE</Text>
+            {hasListItemsData && (
+                <>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>ACTIVE</Text>
 
-                <View style={styles.items}>
-                    {activeItems.map(renderListItem)}
+                        <View style={styles.items}>
+                            {activeItems.map(renderListItem)}
 
-                    {activeItems.length === 0 && (
-                        <Text style={styles.empty}>No active items.</Text>
-                    )}
-                </View>
-            </View>
-
-            {finishedItems.length > 0 && (
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>FINISHED</Text>
-
-                    <View style={styles.items}>
-                        {finishedItems.map(renderListItem)}
+                            {activeItems.length === 0 && (
+                                <Text style={styles.empty}>
+                                    No active items.
+                                </Text>
+                            )}
+                        </View>
                     </View>
-                </View>
+
+                    {finishedItems.length > 0 && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>FINISHED</Text>
+
+                            <View style={styles.items}>
+                                {finishedItems.map(renderListItem)}
+                            </View>
+                        </View>
+                    )}
+                </>
             )}
         </View>
     );

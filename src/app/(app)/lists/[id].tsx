@@ -10,6 +10,7 @@ import {
     Text,
     View,
 } from 'react-native';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 import { ListItems } from '@/components/items/ListItems';
 import { EditListModal } from '@/components/lists/EditListModal';
@@ -31,9 +32,12 @@ export default function ListDetailsScreen() {
 
     const {
         list,
+        hasListData,
         memberRole,
         isListLoading,
+        isListRefetching,
         listError,
+        refetchList,
         isEditListModalVisible,
         editListForm,
         isUpdating,
@@ -48,6 +52,11 @@ export default function ListDetailsScreen() {
     } = useListDetails(id);
 
     const { notifyMembers, isNotifying } = useListMembership(id, user?.id);
+    const netInfo = useNetInfo();
+    const isOffline =
+        netInfo.isConnected === false && netInfo.isInternetReachable !== true;
+    const isInitialListLoading = isListLoading && !hasListData;
+    const hasInitialListError = Boolean(listError) && !hasListData;
 
     const handleOpenActions = (anchor: MenuAnchor) => {
         setMenuAnchor(anchor);
@@ -107,19 +116,41 @@ export default function ListDetailsScreen() {
 
     return (
         <View style={styles.container}>
-            {isListLoading && (
+            {isInitialListLoading && (
                 <View style={styles.loading}>
                     <ActivityIndicator />
                 </View>
             )}
 
-            {listError && <Text style={styles.error}>{listError.message}</Text>}
+            {hasInitialListError && (
+                <View style={styles.loadError}>
+                    <Text style={styles.error}>
+                        {isOffline
+                            ? 'Нет подключения к интернету. Подключитесь к сети, чтобы загрузить список.'
+                            : 'Не удалось загрузить список.'}
+                    </Text>
+                    <Pressable
+                        style={[
+                            styles.retryButton,
+                            isListRefetching && styles.disabledButton,
+                        ]}
+                        onPress={() => void refetchList()}
+                        disabled={isListRefetching}
+                    >
+                        {isListRefetching ? (
+                            <ActivityIndicator size="small" color="#208AEF" />
+                        ) : (
+                            <Text style={styles.retry}>Повторить</Text>
+                        )}
+                    </Pressable>
+                </View>
+            )}
 
             {deleteListError && (
                 <Text style={styles.error}>{deleteListError.message}</Text>
             )}
 
-            {!isListLoading && !listError && list && (
+            {list && (
                 <>
                     <ListHeader list={list} onMenuPress={handleOpenActions} />
 
@@ -223,5 +254,23 @@ const styles = StyleSheet.create({
     error: {
         color: '#D32F2F',
         marginBottom: 16,
+    },
+    loadError: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    retryButton: {
+        minWidth: 100,
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+    retry: {
+        color: '#208AEF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    disabledButton: {
+        opacity: 0.5,
     },
 });

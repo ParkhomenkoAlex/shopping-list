@@ -28,8 +28,9 @@ export function useList(id?: string) {
     });
 
     const {
-        data: list = null,
-        isLoading: isListLoading,
+        data: listData,
+        isPending: isListLoading,
+        isFetching: isListFetching,
         error: listError,
         refetch: refetchList,
     } = useQuery({
@@ -159,8 +160,10 @@ export function useList(id?: string) {
         listsError,
         refetchLists,
 
-        list,
+        list: listData ?? null,
+        hasListData: listData !== undefined,
         isListLoading,
+        isListRefetching: isListFetching && !isListLoading,
         listError,
         refetchList,
 
