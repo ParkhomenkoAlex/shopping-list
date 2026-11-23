@@ -24,7 +24,8 @@
 - Passed: restoring Wi-Fi automatically reloaded lists without navigation or sign-in.
 - Passed: the corrected APK no longer threw the `initialRouteName="lists"` startup error.
 - Passed: signed-out offline cold start displayed Sign In and the offline banner.
-- Not yet executed: real-device testing, slow/unstable networks, Supabase unavailability, expired/revoked sessions, app update with persisted session, notification-opening navigation, and Sentry delivery verification.
+- Passed: Dev Release APK `SL-Dev-201-v1.0.0.apk` on Pixel 8 delivered controlled issue `SHOPPING-LIST-1` to Sentry. The event used release `shopping-list@1.0.0`, dist `201`, and symbolicated to `src/app/(app)/lists/index.tsx` in `handleSentryDevTest`.
+- Not yet executed: real-device testing, slow/unstable networks, Supabase unavailability, expired/revoked sessions, app update with persisted session, notification-opening navigation, Production Sentry delivery, and native-crash reporting.
 
 ### Reproduced regressions and source fixes
 
@@ -39,7 +40,7 @@
 4. With a saved session, disable networking, force-stop, and cold-start. My Lists must show the offline/unavailable-data message rather than `No lists yet.`; reconnect and verify automatic loading.
 5. Disable networking after lists are loaded. The cached lists must remain visible; reconnect and verify recovery without navigation or logout.
 6. Background the app for at least the token-refresh interval, restore connectivity, foreground it, and confirm active stale queries recover.
-7. No controlled Sentry test-event mechanism is currently implemented. With a configured DSN, add temporary development-only instrumentation that calls `reportError(new Error('Sentry verification'))`, make a Development build, verify one sanitized event with the expected release, dist, and environment, then remove that instrumentation before the checkpoint commit. Never use Production for this test.
+7. Passed: a temporary Dev-only explicit action called `Sentry.captureException(new Error('Sentry Dev symbolication verification'))` in `ListsScreen`; Dev APK `201` delivered issue `SHOPPING-LIST-1` and symbolicated to the original TypeScript frame. The temporary action was removed immediately after verification. Never use Production for this test.
 
 ## Android phone #1 and #2
 
@@ -55,9 +56,9 @@ Record APK name, environment, versionCode, device/Android version, network state
 
 ## Sentry setup and source maps
 
-1. Create a React Native project in Sentry.
-2. Allow the `@sentry/cli` build script before an upload build. It is currently listed by `pnpm ignored-builds`; add it to `pnpm.onlyBuiltDependencies` (or approve it through the repository's pnpm workflow) and run `pnpm rebuild @sentry/cli`. Do not make this dependency-policy change until the team is ready to enable source-map uploads.
-3. Set `EXPO_PUBLIC_SENTRY_DSN` in each appropriate local environment file/build environment. The DSN is client configuration.
-4. Set `SENTRY_ORG`, `SENTRY_PROJECT`, and the secret `SENTRY_AUTH_TOKEN` only in the shell/CI which builds release APKs. Never prefix the token with `EXPO_PUBLIC_`.
-5. Build with `pnpm build:apk:dev` or `pnpm build:apk:prod`; with the token available, the Sentry Expo config plugin uploads matching source maps. Verify the release and Debug IDs in Sentry before declaring symbolication complete.
-6. GitHub Actions workflows currently deploy Supabase only; if an APK workflow is added, store the token in GitHub Actions secrets and pass the three non-public Sentry variables only to that build step.
+1. Passed: the Sentry React Native project `shopping-list` is configured for Development runtime delivery.
+2. Passed: source maps for `shopping-list@1.0.0`, dist `201` were uploaded and symbolicated the controlled Development event.
+3. Keep `EXPO_PUBLIC_SENTRY_DSN` only in the appropriate build environment. The DSN is client configuration; never put the private auth token in an `EXPO_PUBLIC_*` variable.
+4. The local build scripts provide `SENTRY_ORG=alex-org-e0` and `SENTRY_PROJECT=shopping-list`, retrieve a non-public token from macOS Keychain when needed, and stop before prebuild if upload is enabled but credentials are absent.
+5. Before closing Phase 10, repeat delivery/symbolication for Production and verify native crash reporting only if it is in scope.
+6. GitHub Actions workflows currently deploy Supabase only; if an APK workflow is added, store the token in GitHub Actions secrets and pass it only to that build step.

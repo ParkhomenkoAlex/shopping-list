@@ -130,12 +130,12 @@
 - [x] Privacy-safe startup breadcrumbs are implemented for launch, foreground/background, connectivity and auth initialization/retry states.
 - [x] Release/version, build (`dist`) and environment tags are configured in source.
 - [ ] Centralized production application logging. The application currently has conditional Sentry breadcrumbs and scattered `console.error`; it has no persistent structured logger or confirmed remote log delivery.
-- [ ] Runtime Sentry DSN configuration. `EXPO_PUBLIC_SENTRY_DSN` is currently absent/empty for Local, Development and Production, so `Sentry.init` is disabled in the built application.
-- [ ] Verified JavaScript exception delivery and supported native crash reporting with a configured DSN.
-- [ ] Controlled non-production test event, including verification that sensitive fields are absent.
-- [ ] Verified received release, environment and Android build (`dist`) metadata.
-- [ ] Source-map/native debug upload and symbolication verification. The prior APK used `SENTRY_DISABLE_AUTO_UPLOAD=true`; `@sentry/cli` is currently listed by `pnpm ignored-builds`.
-- [ ] Sentry project, `SENTRY_ORG`, `SENTRY_PROJECT` and private `SENTRY_AUTH_TOKEN` setup in build/CI only. The token must never be an `EXPO_PUBLIC_` variable or committed.
+- [x] Development runtime DSN configuration and JavaScript exception delivery: Dev Release APK `SL-Dev-201-v1.0.0.apk` delivered issue `SHOPPING-LIST-1`.
+- [ ] Production runtime DSN configuration and supported native crash reporting remain unverified.
+- [x] Controlled Dev-only test event and JavaScript symbolication: release `shopping-list@1.0.0`, dist `201`, and original TypeScript frame `src/app/(app)/lists/index.tsx` / `handleSentryDevTest` were verified. The temporary UI trigger was removed after verification.
+- [ ] Privacy validation in the received Sentry event remains to be recorded explicitly; source configuration strips user/request data and disables UI captures.
+- [x] Development source-map upload and Debug ID symbolication were verified for dist `201`; Production and native debug-symbol upload remain unverified.
+- [ ] Private `SENTRY_AUTH_TOKEN` setup must remain build/CI-only. The token must never be an `EXPO_PUBLIC_` variable or committed; local build workflow retrieves it from Keychain or fails before prebuild when upload is required.
 - [ ] Decide whether Phase 10 requires a logging abstraction beyond Sentry breadcrumbs and development `console.error` calls.
 
 ### 10.4 — Real Device Reliability Testing
@@ -147,7 +147,7 @@
 - [ ] Background/foreground and token-refresh tests.
 - [ ] Development and Production release APK validation, including install-over-existing-session.
 - [ ] Deep-link and notification-tap navigation validation.
-- [ ] Error reporting, source-map symbolication and privacy validation.
+- [ ] Production error-reporting, privacy validation, and native symbolication.
 - [ ] Final regression pass for all detailed scenarios in `docs/PHASE_10_RELIABILITY_TEST_PLAN.md`.
 
 ### Phase 10 evidence and closure criteria
