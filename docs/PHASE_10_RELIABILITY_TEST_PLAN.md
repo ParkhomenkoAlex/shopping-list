@@ -6,11 +6,23 @@ Status: **Completed** means manually verified evidence exists; **Partially compl
 
 - Run `pnpm exec tsc --noEmit`, `pnpm lint`, and `pnpm exec expo config --type public --json >/dev/null` before an APK build. `expo-doctor` is not installed as a project executable, so `pnpm exec expo-doctor` is not a valid command in this repository; run `npx expo-doctor` separately only when that external tool is available.
 - The project did not previously include a test runner. Add component/provider tests when Jest or an equivalent test setup is adopted; do not add a second test framework solely for this phase.
-- **Completed locally / pending GitHub verification:** the quality-only `CI`
-  workflow and `typecheck`/`check` scripts are implemented. The workflow has no
-  deployment, APK, emulator, remote Supabase or Sentry-upload steps; verify its
-  first remote run and the exact required status-check name before configuring
-  branch protection.
+- **Completed:** the quality-only `CI` workflow and `typecheck`/`check` scripts
+  are implemented. On PR #49, the GitHub Actions `quality` job passed; the
+  workflow has no deployment, APK, emulator, remote Supabase or Sentry-upload
+  steps.
+- **Completed:** intentional failure verification. The malformed temporary
+  `ci-test.json` in commit `6ca0082` failed Prettier in GitHub CI despite being
+  committed with `--no-verify`; the required `quality` check blocked merging.
+  Removing the temporary file restored a successful CI result and merge
+  availability.
+- **Completed:** the active Ruleset `Protect develop and master` requires PRs
+  and the GitHub Actions `quality` status check for `develop` and `master`;
+  branches must be up to date, force pushes and deletions are blocked, 0
+  approvals are required, the bypass list is empty, and deployments are not
+  required. `quality`, rather than workflow name `CI`, is the required check.
+- **Pending:** merge PR #49 into `develop`, verify the automatic post-merge CI
+  run, confirm that no deployment or APK workflow starts, and reconcile the
+  initial CI completion status.
 
 ## Emulator: Pixel 8
 

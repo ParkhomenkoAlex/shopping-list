@@ -14,7 +14,8 @@ GitHub Actions currently provides manual Development and Production deployment
 workflows. They can deploy Supabase migrations and Edge Functions, then build
 and upload the corresponding APK when explicitly started with
 `workflow_dispatch`. Pull Requests, merges and pushes do not deploy or build
-APKs. A separate quality-only CI workflow is approved but not implemented yet.
+APKs. The separate quality-only CI workflow is implemented and verified on a
+Pull Request; its post-merge verification remains pending.
 
 ---
 
@@ -1769,32 +1770,37 @@ Android APK. They do not run from Pull Requests, pushes or merges.
 Do not treat these manual deployment workflows as code-quality checks or as
 required merge checks.
 
-## Planned quality CI
+## Quality CI
 
-The repository now contains a separate `CI` workflow for Pull Requests and
-pushes to `develop` and `master`, plus manual execution. It installs the locked
-pnpm dependency graph and runs Prettier, ESLint, TypeScript and Expo
-public-config validation without credentials, remote Supabase access, APK
-builds, emulators, deployments or Sentry uploads. GitHub-side verification and
-branch-protection configuration remain pending until the first successful run.
+The repository contains a separate `CI` workflow for Pull Requests and pushes
+to `develop` and `master`, plus manual execution. It installs the locked pnpm
+dependency graph and runs Prettier, ESLint, TypeScript and Expo public-config
+validation without credentials, remote Supabase access, APK builds, emulators,
+deployments or Sentry uploads.
+
+GitHub verification was completed on PR #49: the `quality` job passed, then an
+intentionally malformed temporary `ci-test.json` (commit `6ca0082`) failed
+Prettier and blocked merging. After removing that fixture, CI passed and the
+Merge pull request button became available again. The remaining verification is
+to merge PR #49, confirm the automatic post-merge CI run, and confirm that no
+deployment or APK workflow starts.
 
 CI and deployment remain independent: a successful CI run never changes a
 remote environment, and a merge never starts a manual deployment workflow.
 
 ## Branch protection
 
-After the first successful CI run, configure GitHub branch protection or a
-Ruleset manually for `develop` and `master`: require Pull Requests and the
-actual reported CI quality status check; block force pushes and accidental
-deletion; keep an owner bypass for emergencies; and do not require an external
-review for this single-maintainer repository. Evaluate the up-to-date branch
-option and the repository visibility/plan limits in the GitHub interface.
+The active GitHub Ruleset `Protect develop and master` covers `develop` and
+`master`. It requires Pull Requests (0 approvals), the GitHub Actions status
+check `quality`, and up-to-date branches; it blocks force pushes and deletions,
+has an empty bypass list, allows Merge/Squash/Rebase, and has no required
+deployments. The required check is `quality`, not the workflow name `CI`.
 
 Manual deployment workflows must not be configured as required merge checks.
 
 # 38. GitHub Secrets
 
 Manual deployment workflows require their Supabase and APK-build secrets to be
-configured only in GitHub Actions. The future quality CI workflow requires no
-Supabase, Sentry, Android signing or production credentials. Never add secret
-values to source files, workflow YAML, `.env` files or pull-request logs.
+configured only in GitHub Actions. The quality CI workflow requires no Supabase,
+Sentry, Android signing or production credentials. Never add secret values to
+source files, workflow YAML, `.env` files or pull-request logs.

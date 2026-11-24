@@ -153,24 +153,32 @@
 
 ### CI quality gate and manual deployment hardening
 
-- [x] Completed locally — initial quality CI is configured in
-      `.github/workflows/ci.yml`: one stable `CI / quality` check for PRs and
-      pushes to `develop`/`master`, plus `workflow_dispatch`; frozen pnpm install,
-      Prettier, ESLint, TypeScript and Expo public-config validation remain separate
-      steps with Node 22, pnpm 10.11.0, cache, minimal permissions, stale-run
-      cancellation and no environment credentials. It cannot deploy, build APKs,
-      use emulators or upload Sentry artifacts.
-- [x] Completed locally — `typecheck` and aggregate local `check` scripts are
+- [x] Completed — initial quality CI is configured in `.github/workflows/ci.yml`
+      and was verified by PR #49 (initial implementation commit `af3e3fd`): one
+      stable `quality` job runs for PRs and pushes to `develop`/`master`, plus
+      `workflow_dispatch`; frozen pnpm install, Prettier, ESLint, TypeScript and
+      Expo public-config validation remain separate steps with Node 22, pnpm
+      10.11.0, cache, minimal permissions, stale-run cancellation and no
+      environment credentials. It cannot deploy, build APKs, use emulators or
+      upload Sentry artifacts.
+- [x] Completed — `typecheck` and aggregate local `check` scripts are
       implemented; pnpm 10.11.0 is pinned in package metadata. CI still uses
       individual workflow steps for readable diagnostics.
-- [-] Partially completed — GitHub-side CI verification, actual status-check
-  name confirmation and branch-protection configuration remain pending until
-  the first successful remote run.
-- [ ] Pending — configure GitHub branch protection only after a successful CI
-      run: PR + required CI quality check, force-push/deletion protection, no
-      mandatory external review for a single maintainer, and evaluate up-to-date
-      branch enforcement, repository visibility and plan limits. Manual deployment
-      workflows are never required merge checks.
+- [x] Completed — GitHub CI verification: the `quality` job passed for PR #49;
+      an intentionally malformed `ci-test.json` in commit `6ca0082` failed
+      Prettier independently of local hooks, blocked merging as a required check,
+      and CI passed again after the temporary file was removed.
+- [x] Completed — active GitHub Ruleset `Protect develop and master` protects
+      `develop` and `master`: PRs are required (0 approvals), GitHub Actions
+      status check `quality` is required and branches must be up to date; force
+      pushes and deletions are blocked, the bypass list is empty, Merge/Squash/
+      Rebase are allowed, and required deployments are disabled. `quality`, not
+      the workflow name `CI`, is the configured required status check. Manual
+      deployment workflows are not required merge checks.
+- [-] Partially completed — CI quality gate closing verification remains after
+  merging PR #49 into `develop`: verify the automatic post-merge CI run,
+  confirm that no deployment or APK workflow starts, then reconcile final CI
+  status.
 - [ ] Pending — manual deployment hardening, separate from initial CI and still
       manual-only: Linux Sentry auth handling versus macOS Keychain fallback, early
       prerequisite validation before remote changes, partial-deployment recovery,
