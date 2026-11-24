@@ -10,12 +10,11 @@ The project supports three completely separated environments:
 
 The environments use different Android application IDs, so the applications can be installed independently on the same Android device.
 
-The project also uses GitHub Actions to automatically:
-
-- apply Supabase migrations;
-- build Development APKs after changes reach `develop`;
-- build Production APKs after changes reach `master`;
-- generate unique Android build numbers.
+GitHub Actions currently provides manual Development and Production deployment
+workflows. They can deploy Supabase migrations and Edge Functions, then build
+and upload the corresponding APK when explicitly started with
+`workflow_dispatch`. Pull Requests, merges and pushes do not deploy or build
+APKs. A separate quality-only CI workflow is approved but not implemented yet.
 
 ---
 
@@ -576,7 +575,9 @@ Android package:
 com.anonymous.shoppinglist.dev
 ```
 
-The Development database is updated automatically by GitHub Actions when migrations are merged into `develop`.
+The Development database is changed only by an explicitly dispatched Development
+deployment workflow. Merging into `develop` does not deploy migrations, Edge
+Functions or an APK.
 
 ---
 
@@ -596,7 +597,9 @@ Android package:
 com.anonymous.shoppinglist
 ```
 
-The Production database is updated automatically by GitHub Actions when migrations are merged into `master`.
+The Production database is changed only by an explicitly dispatched Production
+deployment workflow. Merging into `master` does not deploy migrations, Edge
+Functions or an APK.
 
 ---
 
@@ -721,7 +724,8 @@ This makes it easy to identify exactly which build is installed.
 
 ## GitHub Actions build numbers
 
-GitHub Actions automatically generates build numbers.
+The manual GitHub Actions deployment workflows generate build numbers when they
+are run.
 
 Development:
 
@@ -1749,4 +1753,48 @@ Then create a Pull Request into `develop`.
 
 ---
 
-# 37. GitHub Acti
+# 37. GitHub Actions
+
+## Current policy
+
+The repository currently has two manual-only deployment workflows:
+
+- `Supabase Development` (`.github/workflows/supabase-development.yml`)
+- `Supabase Production` (`.github/workflows/supabase-production.yml`)
+
+They are started through `workflow_dispatch`. Each workflow can deploy
+Supabase migrations and Edge Functions, then build and upload the matching
+Android APK. They do not run from Pull Requests, pushes or merges.
+
+Do not treat these manual deployment workflows as code-quality checks or as
+required merge checks.
+
+## Planned quality CI
+
+The repository now contains a separate `CI` workflow for Pull Requests and
+pushes to `develop` and `master`, plus manual execution. It installs the locked
+pnpm dependency graph and runs Prettier, ESLint, TypeScript and Expo
+public-config validation without credentials, remote Supabase access, APK
+builds, emulators, deployments or Sentry uploads. GitHub-side verification and
+branch-protection configuration remain pending until the first successful run.
+
+CI and deployment remain independent: a successful CI run never changes a
+remote environment, and a merge never starts a manual deployment workflow.
+
+## Branch protection
+
+After the first successful CI run, configure GitHub branch protection or a
+Ruleset manually for `develop` and `master`: require Pull Requests and the
+actual reported CI quality status check; block force pushes and accidental
+deletion; keep an owner bypass for emergencies; and do not require an external
+review for this single-maintainer repository. Evaluate the up-to-date branch
+option and the repository visibility/plan limits in the GitHub interface.
+
+Manual deployment workflows must not be configured as required merge checks.
+
+# 38. GitHub Secrets
+
+Manual deployment workflows require their Supabase and APK-build secrets to be
+configured only in GitHub Actions. The future quality CI workflow requires no
+Supabase, Sentry, Android signing or production credentials. Never add secret
+values to source files, workflow YAML, `.env` files or pull-request logs.
