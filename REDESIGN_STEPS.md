@@ -175,18 +175,35 @@
       Rebase are allowed, and required deployments are disabled. `quality`, not
       the workflow name `CI`, is the configured required status check. Manual
       deployment workflows are not required merge checks.
-- [-] Partially completed — CI quality gate closing verification remains after
-  merging PR #49 into `develop`: verify the automatic post-merge CI run,
-  confirm that no deployment or APK workflow starts, then reconcile final CI
-  status.
-- [ ] Pending — manual deployment hardening, separate from initial CI and still
-      manual-only: Linux Sentry auth handling versus macOS Keychain fallback, early
-      prerequisite validation before remote changes, partial-deployment recovery,
-      Development/Production branch guards, pinned Supabase CLI, permissions and
-      concurrency, Production approvals where supported, dynamic artifact naming,
-      Java/Android prerequisites, and deployment verification/recovery procedures.
-      Confirmed configuration gaps must be separated from runtime failures not yet
-      reproduced.
+- [x] Completed — PR #49 was merged into `develop` (merge commit `370e0c9`),
+      local `develop` was fast-forwarded to `origin/develop`, and the repository
+      owner confirmed a successful automatic post-merge `quality` run. The
+      temporary failure fixture remains removed; the intentional failure and
+      recovery commits remain as expected history.
+- [ ] Pending — optional trigger-scope verification not yet performed: manual
+      `workflow_dispatch` execution of CI and CI/ruleset behavior on `master`.
+      The deployment and APK workflows are configured as manual-only, but their
+      absence from the post-merge run history has not been independently recorded.
+
+#### Manual deployment recovery
+
+- [x] Confirmed incident — manually dispatched `Supabase Development` run #31
+      stopped before changing Edge Function `notify-list-members`: the CLI needed
+      non-interactive `--yes`. The APK steps were skipped, not failed. Whether
+      `db push` applied new migrations or found the database current is unknown.
+- [-] Partially completed — minimal source recovery pins Supabase CLI `3.3.0`,
+  uses explicit `--remote=<project ref>` and `--yes` for Dev/Prod database and
+  Edge Function writes, injects the environment DSN, and scopes
+  `SENTRY_AUTH_TOKEN` to the APK build step. It retains manual-only triggers,
+  target selection and execution order. GitHub runtime verification is pending.
+- [ ] Pending — configure `SENTRY_AUTH_TOKEN`, `EXPO_PUBLIC_SENTRY_DEV_DSN`, and
+      `EXPO_PUBLIC_SENTRY_PROD_DSN` as GitHub secrets, then manually verify a
+      Development run before any Production dispatch.
+- [ ] Deferred — optional hardening: branch guards, concurrency, GitHub
+      Environments/Production approval, preflight, dynamic artifact names,
+      Android signing/tooling validation, Auth-config deprecations, and explicit
+      partial-deployment recovery procedures. These are not part of minimal
+      recovery and must not change manual-only execution.
 - [ ] Deferred — Expo Doctor, JavaScript/component test infrastructure, local
       isolated Supabase pgTAP CI, investigation of the missing Supabase seed file,
       and Edge Function Deno validation. They are not part of initial quality CI.
@@ -210,4 +227,7 @@
 
 **Phase 10 — App Reliability & Error Monitoring (Partially completed; see closure criteria above)**
 
-**Next development priority after initial CI implementation and verification: UI/UX Redesign.**
+**Next development priority: UI/UX Redesign. It is paused after the completed
+architecture audit on `feature/ui-ux-redesign` (`119d5b5`) and resumes after
+minimal deployment recovery is verified; no UI/UX implementation belongs to the
+MDH branch.**

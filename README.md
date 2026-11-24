@@ -1781,9 +1781,12 @@ deployments or Sentry uploads.
 GitHub verification was completed on PR #49: the `quality` job passed, then an
 intentionally malformed temporary `ci-test.json` (commit `6ca0082`) failed
 Prettier and blocked merging. After removing that fixture, CI passed and the
-Merge pull request button became available again. The remaining verification is
-to merge PR #49, confirm the automatic post-merge CI run, and confirm that no
-deployment or APK workflow starts.
+Merge pull request button became available again. PR #49 was then merged into
+`develop` as `370e0c9`, and the repository owner confirmed that automatic
+post-merge CI passed. Manual `workflow_dispatch` CI and CI/ruleset execution on
+`master` remain unverified. Deployment and APK workflows are configured as
+manual-only; their absence from post-merge GitHub run history has not been
+independently verified.
 
 CI and deployment remain independent: a successful CI run never changes a
 remote environment, and a merge never starts a manual deployment workflow.
@@ -1797,6 +1800,64 @@ has an empty bypass list, allows Merge/Squash/Rebase, and has no required
 deployments. The required check is `quality`, not the workflow name `CI`.
 
 Manual deployment workflows must not be configured as required merge checks.
+
+## Manual deployment recovery
+
+This is a minimal recovery of existing manual workflows, not comprehensive
+deployment hardening. It remains independent from quality CI and must never add
+automatic deployments or APK builds on a push or Pull Request.
+
+### Confirmed incident
+
+Manual `Supabase Development` run #31 completed setup and `supabase db push`,
+then failed before changing Edge Function `notify-list-members`: the hosted
+`supabase functions deploy` command required non-interactive confirmation and
+the workflow did not pass `--yes`. The CLI reported that no function was changed.
+It is not known whether migrations applied new changes or were already current;
+the APK preparation, build, and artifact steps were skipped. Do not describe the
+APK build as failed.
+
+### Minimal recovery changes
+
+- Pin Supabase CLI `3.3.0` in both workflows.
+- Use `--remote=<project ref>` and `--yes` for `db push` and Edge Function deploy.
+- Preserve the existing Development and Production secret-selected targets and
+  the migration → function → APK → artifact order.
+- Write the environment-appropriate runtime Sentry DSN into the generated env
+  file and expose private `SENTRY_AUTH_TOKEN` only to the APK build step.
+
+The workflow remains non-atomic. A manual retry must inspect the previous run;
+this minimal fix does not add branch guards, concurrency, preflight, signing
+changes, dynamic artifact naming, Auth config changes, or recovery automation.
+
+### Required GitHub configuration
+
+Existing secret names used by the workflows are:
+
+- `SUPABASE_ACCESS_TOKEN` — private Supabase CLI authentication token.
+- `SUPABASE_DEV_PROJECT_REF` / `SUPABASE_PROD_PROJECT_REF` — separate remote
+  targets.
+- `EXPO_PUBLIC_SUPABASE_DEV_URL` / `EXPO_PUBLIC_SUPABASE_PROD_URL` and matching
+  `EXPO_PUBLIC_SUPABASE_*_PUBLISHABLE_KEY` — environment-specific runtime config.
+
+Additional required secrets are `SENTRY_AUTH_TOKEN` for source-map upload and
+`EXPO_PUBLIC_SENTRY_DEV_DSN` / `EXPO_PUBLIC_SENTRY_PROD_DSN` for runtime delivery.
+The DSNs are public client configuration, but repository secrets avoid committing
+environment configuration; the auth token is private. No Android signing secret
+is defined by this plan: first verify the generated Android release signing
+behavior and agree a signing policy.
+
+### Development workflow acceptance criteria
+
+After the owner configures the new secrets and explicitly dispatches Development,
+the run must confirm the intended remote target, complete `db push` and function
+deployment with CLI `3.3.0`, build/upload the Dev APK, and report Sentry upload
+success without exposing private values. Production remains untouched. APK
+installation and runtime behavior remain separate manual verification.
+
+Deferred decisions: branch guards, concurrency, GitHub Environments/approvals,
+preflight, dynamic artifact names, Android signing/tooling, Auth provider-key
+migration, and comprehensive partial-deployment recovery.
 
 # 38. GitHub Secrets
 
