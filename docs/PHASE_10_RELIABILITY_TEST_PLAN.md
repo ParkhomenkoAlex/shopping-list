@@ -20,9 +20,15 @@ Status: **Completed** means manually verified evidence exists; **Partially compl
   branches must be up to date, force pushes and deletions are blocked, 0
   approvals are required, the bypass list is empty, and deployments are not
   required. `quality`, rather than workflow name `CI`, is the required check.
-- **Pending:** merge PR #49 into `develop`, verify the automatic post-merge CI
-  run, confirm that no deployment or APK workflow starts, and reconcile the
-  initial CI completion status.
+- **Completed:** PR #49 was merged into `develop` as `370e0c9`; local `develop`
+  was fast-forwarded to `origin/develop`, and the repository owner confirmed a
+  successful automatic post-merge `quality` run. The temporary failure fixture
+  remains removed; the intentional failure and recovery commits remain in
+  history as expected.
+- **Pending:** manual `workflow_dispatch` CI execution and CI/ruleset behavior
+  on `master` have not been verified. Deployment and APK workflows are
+  configured as manual-only, but their absence from post-merge run history has
+  not been independently confirmed.
 
 ## Emulator: Pixel 8
 
@@ -89,10 +95,18 @@ Record APK name, environment, versionCode, device/Android version, network state
 3. **Completed in source:** `EXPO_PUBLIC_SENTRY_DSN` is runtime client configuration; private auth tokens are not `EXPO_PUBLIC_*` values. The monitoring code disables PII, screenshots, view hierarchy, replay, and failed-request capture.
 4. **Completed locally:** build scripts provide `SENTRY_ORG=alex-org-e0` and `SENTRY_PROJECT=shopping-list`, retrieve a non-public token from macOS Keychain when needed, and stop before prebuild if upload is enabled but credentials are absent.
 5. **Pending:** record an explicit privacy review of a received event, repeat delivery/symbolication for Production, and verify native crash reporting if it is in scope.
-6. **Pending / separate manual-deployment hardening:** existing
+6. **Pending / minimal manual-deployment recovery:** existing
    `workflow_dispatch` workflows attempt both Supabase migration/Edge Function
-   deployment and APK build/upload. They are not automatic CI. Before relying
-   on GitHub-hosted Linux APK builds, address Sentry authentication, early
-   prerequisite validation and partial-deployment recovery; any required token
-   remains a GitHub secret. The initial quality CI workflow must not build APKs
-   or upload Sentry artifacts.
+   deployment and APK build/upload. They are not automatic CI. Manual Development
+   run #31 stopped before changing `notify-list-members`, because Edge Function
+   deploy lacked `--yes`; it is unknown whether `db push` applied a migration or
+   found none. The APK steps were skipped and must not be reported as failed.
+   Minimal recovery pins CLI `3.3.0`, uses explicit `--remote` and `--yes` for
+   remote writes, passes the environment DSN into the generated env file, and
+   scopes `SENTRY_AUTH_TOKEN` to the APK build. After required GitHub secrets are
+   configured, manually dispatch Development and record migration, function, APK,
+   source-map and artifact results separately. Production is pending explicit
+   approval. Branch guards, concurrency, preflight, signing, Auth config migration,
+   dynamic artifact naming, and comprehensive recovery remain deferred. Required
+   private values stay GitHub secrets. The initial quality CI workflow must not
+   build APKs or upload Sentry artifacts.
