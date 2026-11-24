@@ -13,8 +13,10 @@ export function useListItems(listId: string | undefined) {
     const queryClient = useQueryClient();
 
     const {
-        data: listItems = [],
-        isLoading: isListItemsLoading,
+        data: listItemsData,
+        isPending: isListItemsLoading,
+        isPaused: isListItemsPaused,
+        isFetching: isListItemsFetching,
         error: listItemsError,
         refetch: refetchListItems,
     } = useQuery({
@@ -90,8 +92,11 @@ export function useListItems(listId: string | undefined) {
     });
 
     return {
-        listItems,
+        listItems: listItemsData ?? [],
+        hasListItemsData: listItemsData !== undefined,
         isLoading: isListItemsLoading,
+        isPaused: isListItemsPaused,
+        isRefetching: isListItemsFetching && !isListItemsLoading,
         error: listItemsError,
         refetchListItems,
 

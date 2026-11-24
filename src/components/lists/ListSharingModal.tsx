@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Modal,
@@ -31,20 +31,50 @@ export function ListSharingModal({
     const {
         memberRole,
         sharedMembers,
+        hasSharedMembersData,
         isSharedMembersLoading,
+        isSharedMembersPaused,
+        isSharedMembersRefetching,
         sharedMembersError,
+        refetchSharedMembers,
         addMemberByEmail,
         isAddingMember,
         addMemberError,
         removeMember,
-        isRemovingMember,
         removeMemberError,
     } = useListMembership(listId, user?.id);
 
     const [email, setEmail] = useState('');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const pendingMemberIdsRef = useRef<Set<string>>(new Set());
+    const [pendingMemberIds, setPendingMemberIds] = useState<Set<string>>(
+        () => new Set()
+    );
 
     const isOwner = memberRole === 'owner';
+    const isInitialMembersLoading =
+        isSharedMembersLoading &&
+        !hasSharedMembersData &&
+        !isSharedMembersPaused;
+    const isInitialMembersPaused =
+        isSharedMembersPaused && !hasSharedMembersData;
+    const hasInitialMembersError =
+        Boolean(sharedMembersError) && !hasSharedMembersData;
+
+    const startMemberRemoval = (memberId: string) => {
+        if (pendingMemberIdsRef.current.has(memberId)) {
+            return false;
+        }
+
+        pendingMemberIdsRef.current.add(memberId);
+        setPendingMemberIds(new Set(pendingMemberIdsRef.current));
+        return true;
+    };
+
+    const finishMemberRemoval = (memberId: string) => {
+        pendingMemberIdsRef.current.delete(memberId);
+        setPendingMemberIds(new Set(pendingMemberIdsRef.current));
+    };
 
     const handleAddMember = async () => {
         const normalizedEmail = email.trim();
@@ -71,10 +101,16 @@ export function ListSharingModal({
             message: `Are you sure you want to remove "${memberEmail}" from this list?`,
             confirmText: 'Remove',
             onConfirm: async () => {
+                if (!startMemberRemoval(targetUserId)) {
+                    return;
+                }
+
                 try {
                     await removeMember(targetUserId);
                 } catch (error) {
                     console.error('Failed to remove member:', error);
+                } finally {
+                    finishMemberRemoval(targetUserId);
                 }
             },
         });
@@ -117,75 +153,125 @@ export function ListSharingModal({
                     >
                         <Text style={styles.sectionTitle}>MEMBERS</Text>
 
-                        {isSharedMembersLoading && (
+                        {isInitialMembersLoading && (
                             <ActivityIndicator style={styles.loader} />
                         )}
 
-                        {sharedMembersError && (
-                            <Text style={styles.error}>
-                                {sharedMembersError.message}
+                        {isInitialMembersPaused && (
+                            <Text style={styles.offline}>
+                                Нет подключения к интернету. Подключитесь к
+                                сети, чтобы загрузить участников.
                             </Text>
                         )}
 
-                        {!isSharedMembersLoading && (
+                        {hasInitialMembersError && (
+                            <View style={styles.loadError}>
+                                <Text style={styles.error}>
+                                    Не удалось загрузить участников.
+                                </Text>
+                                <Pressable
+                                    style={[
+                                        styles.retryButton,
+                                        isSharedMembersRefetching &&
+                                            styles.disabledButton,
+                                    ]}
+                                    onPress={() => void refetchSharedMembers()}
+                                    disabled={isSharedMembersRefetching}
+                                >
+                                    {isSharedMembersRefetching ? (
+                                        <ActivityIndicator
+                                            size="small"
+                                            color="#208AEF"
+                                        />
+                                    ) : (
+                                        <Text style={styles.retry}>
+                                            Повторить
+                                        </Text>
+                                    )}
+                                </Pressable>
+                            </View>
+                        )}
+
+                        {hasSharedMembersData && (
                             <View style={styles.members}>
-                                {sharedMembers.map((member) => (
-                                    <View
-                                        key={member.user_id}
-                                        style={styles.memberRow}
-                                    >
-                                        <View style={styles.avatar}>
-                                            <Text style={styles.avatarText}>
-                                                {getMemberInitial(member.email)}
-                                            </Text>
-                                        </View>
+                                {sharedMembers.map((member) => {
+                                    const isRemoving = pendingMemberIds.has(
+                                        member.user_id
+                                    );
 
-                                        <View style={styles.memberInfo}>
-                                            <Text
-                                                style={styles.memberEmail}
-                                                numberOfLines={1}
-                                            >
-                                                {member.email}
-                                            </Text>
-
-                                            <Text style={styles.memberRole}>
-                                                {member.role === 'owner'
-                                                    ? 'Owner'
-                                                    : 'Member'}
-                                            </Text>
-                                        </View>
-
-                                        {isOwner && member.role !== 'owner' && (
-                                            <Pressable
-                                                style={styles.removeButton}
-                                                onPress={() =>
-                                                    handleRemoveMember(
-                                                        member.user_id,
+                                    return (
+                                        <View
+                                            key={member.user_id}
+                                            style={styles.memberRow}
+                                        >
+                                            <View style={styles.avatar}>
+                                                <Text style={styles.avatarText}>
+                                                    {getMemberInitial(
                                                         member.email
-                                                    )
-                                                }
-                                                disabled={isRemovingMember}
-                                                hitSlop={8}
-                                            >
-                                                {isRemovingMember ? (
-                                                    <ActivityIndicator size="small" />
-                                                ) : (
-                                                    <Ionicons
-                                                        name="trash-outline"
-                                                        size={20}
-                                                        color="#D32F2F"
-                                                    />
+                                                    )}
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.memberInfo}>
+                                                <Text
+                                                    style={styles.memberEmail}
+                                                    numberOfLines={1}
+                                                >
+                                                    {member.email}
+                                                </Text>
+
+                                                <Text style={styles.memberRole}>
+                                                    {member.role === 'owner'
+                                                        ? 'Owner'
+                                                        : 'Member'}
+                                                </Text>
+                                            </View>
+
+                                            {isOwner &&
+                                                member.role !== 'owner' && (
+                                                    <Pressable
+                                                        style={
+                                                            styles.removeButton
+                                                        }
+                                                        onPress={() =>
+                                                            handleRemoveMember(
+                                                                member.user_id,
+                                                                member.email
+                                                            )
+                                                        }
+                                                        disabled={isRemoving}
+                                                        accessibilityState={{
+                                                            disabled:
+                                                                isRemoving,
+                                                            busy: isRemoving,
+                                                        }}
+                                                        accessibilityLabel={
+                                                            isRemoving
+                                                                ? 'Удаление участника'
+                                                                : `Удалить ${member.email}`
+                                                        }
+                                                        hitSlop={8}
+                                                    >
+                                                        {isRemoving ? (
+                                                            <ActivityIndicator size="small" />
+                                                        ) : (
+                                                            <Ionicons
+                                                                name="trash-outline"
+                                                                size={20}
+                                                                color="#D32F2F"
+                                                            />
+                                                        )}
+                                                    </Pressable>
                                                 )}
-                                            </Pressable>
-                                        )}
-                                    </View>
-                                ))}
+                                        </View>
+                                    );
+                                })}
                             </View>
                         )}
 
                         {removeMemberError && (
                             <Text style={styles.error}>
-                                {removeMemberError.message}
+                                Не удалось удалить участника.
                             </Text>
                         )}
 
@@ -240,7 +326,7 @@ export function ListSharingModal({
 
                                 {addMemberError && (
                                     <Text style={styles.error}>
-                                        {addMemberError.message}
+                                        Не удалось добавить участника.
                                     </Text>
                                 )}
 
@@ -307,6 +393,23 @@ const styles = StyleSheet.create({
 
     loader: {
         marginVertical: 20,
+    },
+
+    loadError: {
+        marginVertical: 12,
+    },
+
+    retryButton: {
+        alignSelf: 'flex-start',
+        minWidth: 100,
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+
+    retry: {
+        color: '#208AEF',
+        fontSize: 15,
+        fontWeight: '600',
     },
 
     members: {
@@ -396,6 +499,13 @@ const styles = StyleSheet.create({
     error: {
         color: '#D32F2F',
         fontSize: 13,
+        marginTop: 8,
+    },
+
+    offline: {
+        color: '#7A5200',
+        fontSize: 13,
+        lineHeight: 20,
         marginTop: 8,
     },
 

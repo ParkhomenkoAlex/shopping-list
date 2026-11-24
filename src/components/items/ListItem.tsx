@@ -1,5 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 import type { ListItem as ListItemType } from '@/services/ListItemService';
 
@@ -21,6 +27,9 @@ export function ListItem({
     onDelete,
 }: ListItemProps) {
     const isDisabled = isUpdating || isDeleting;
+    const pendingLabel = isDeleting
+        ? 'Удаление элемента списка'
+        : 'Сохранение элемента списка';
 
     return (
         <View
@@ -33,6 +42,7 @@ export function ListItem({
                 style={[styles.content, isDisabled && styles.disabled]}
                 onPress={onToggle}
                 disabled={isDisabled}
+                accessibilityState={{ disabled: isDisabled, busy: isDisabled }}
             >
                 <Ionicons
                     name={
@@ -55,23 +65,41 @@ export function ListItem({
             </Pressable>
 
             <View style={styles.actions}>
-                <Pressable
-                    style={styles.actionButton}
-                    onPress={onEdit}
-                    disabled={isDisabled}
-                    hitSlop={8}
-                >
-                    <Ionicons name="pencil-outline" size={19} color="#666666" />
-                </Pressable>
+                {isDisabled ? (
+                    <View
+                        style={styles.pendingAction}
+                        accessibilityRole="progressbar"
+                        accessibilityLabel={pendingLabel}
+                    >
+                        <ActivityIndicator size="small" color="#208AEF" />
+                    </View>
+                ) : (
+                    <>
+                        <Pressable
+                            style={styles.actionButton}
+                            onPress={onEdit}
+                            hitSlop={8}
+                        >
+                            <Ionicons
+                                name="pencil-outline"
+                                size={19}
+                                color="#666666"
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={styles.actionButton}
-                    onPress={onDelete}
-                    disabled={isDeleting}
-                    hitSlop={8}
-                >
-                    <Ionicons name="trash-outline" size={19} color="#D32F2F" />
-                </Pressable>
+                        <Pressable
+                            style={styles.actionButton}
+                            onPress={onDelete}
+                            hitSlop={8}
+                        >
+                            <Ionicons
+                                name="trash-outline"
+                                size={19}
+                                color="#D32F2F"
+                            />
+                        </Pressable>
+                    </>
+                )}
             </View>
         </View>
     );
@@ -111,8 +139,15 @@ const styles = StyleSheet.create({
     },
 
     actions: {
+        minWidth: 80,
         flexDirection: 'row',
         alignItems: 'center',
+    },
+
+    pendingAction: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
     actionButton: {

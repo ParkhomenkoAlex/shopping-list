@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
@@ -19,15 +20,51 @@ export default function ListsScreen() {
     const { lists, hasListsData, isListsLoading, listsError, refetchLists } =
         useList();
     const { signOut, user } = useAuth();
+    const [isSigningOut, setIsSigningOut] = useState(false);
+    const [signOutError, setSignOutError] = useState<string | null>(null);
+    const isSigningOutRef = useRef(false);
+    const pendingListNavigationIdsRef = useRef<Set<string>>(new Set());
     const netInfo = useNetInfo();
     const isOffline =
         netInfo.isConnected === false && netInfo.isInternetReachable !== true;
 
+    useFocusEffect(
+        useCallback(() => {
+            pendingListNavigationIdsRef.current.clear();
+        }, [])
+    );
+
+    const handleOpenList = (listId: string) => {
+        if (pendingListNavigationIdsRef.current.has(listId)) {
+            return;
+        }
+
+        pendingListNavigationIdsRef.current.add(listId);
+        router.push({
+            pathname: '/lists/[id]',
+            params: { id: listId },
+        });
+    };
+
     const handleSignOut = async () => {
+        if (isSigningOutRef.current) {
+            return;
+        }
+
+        isSigningOutRef.current = true;
+        setSignOutError(null);
+        setIsSigningOut(true);
+
         try {
             await signOut();
         } catch (error) {
             console.error('Failed to sign out:', error);
+            setSignOutError(
+                'Не удалось выйти из аккаунта. Попробуйте ещё раз.'
+            );
+        } finally {
+            isSigningOutRef.current = false;
+            setIsSigningOut(false);
         }
     };
 
@@ -67,14 +104,7 @@ export default function ListsScreen() {
                     <ListCard
                         key={list.id}
                         list={list}
-                        onPress={() =>
-                            router.push({
-                                pathname: '/lists/[id]',
-                                params: {
-                                    id: list.id,
-                                },
-                            })
-                        }
+                        onPress={() => handleOpenList(list.id)}
                     />
                 ))}
 
@@ -88,8 +118,26 @@ export default function ListsScreen() {
 
             <CreateList />
 
-            <Pressable style={styles.logoutButton} onPress={handleSignOut}>
-                <Text style={styles.logoutButtonText}>Log out</Text>
+            {signOutError && <Text style={styles.error}>{signOutError}</Text>}
+
+            <Pressable
+                style={[
+                    styles.logoutButton,
+                    isSigningOut && styles.disabledButton,
+                ]}
+                onPress={() => void handleSignOut()}
+                disabled={isSigningOut}
+                accessibilityState={{
+                    disabled: isSigningOut,
+                    busy: isSigningOut,
+                }}
+            >
+                {isSigningOut && (
+                    <ActivityIndicator size="small" color="#D32F2F" />
+                )}
+                <Text style={styles.logoutButtonText}>
+                    {isSigningOut ? 'Logging out...' : 'Log out'}
+                </Text>
             </Pressable>
         </ScrollView>
     );
@@ -153,6 +201,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#D32F2F',
         alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 8,
+    },
+
+    disabledButton: {
+        opacity: 0.5,
     },
 
     logoutButtonText: {

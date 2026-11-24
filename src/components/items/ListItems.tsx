@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
@@ -26,17 +26,18 @@ export function ListItems({
 }: ListItemsProps) {
     const {
         listItems,
+        hasListItemsData,
         isLoading,
+        isPaused,
+        isRefetching: isListItemsRefetching,
         error: listItemsError,
         refetchListItems,
         isCreating,
         createError,
         createListItem,
         updateListItem,
-        isUpdating: isListItemUpdating,
         updateError: updateListItemError,
         deleteListItem,
-        isDeleting: isListItemDeleting,
         deleteError: deleteListItemError,
     } = useListItems(listId);
 
@@ -46,10 +47,38 @@ export function ListItems({
         null
     );
     const [editingListItemName, setEditingListItemName] = useState('');
+    const pendingItemOperationsRef = useRef<
+        Map<string, 'updating' | 'deleting'>
+    >(new Map());
+    const [pendingItemOperations, setPendingItemOperations] = useState<
+        Map<string, 'updating' | 'deleting'>
+    >(() => new Map());
 
     const activeItems = listItems.filter((listItem) => !listItem.is_completed);
 
     const finishedItems = listItems.filter((listItem) => listItem.is_completed);
+
+    const isInitialLoading = isLoading && !hasListItemsData && !isPaused;
+    const isInitialLoadPaused = isPaused && !hasListItemsData;
+    const hasInitialLoadError = Boolean(listItemsError) && !hasListItemsData;
+
+    const startItemOperation = (
+        listItemId: string,
+        operation: 'updating' | 'deleting'
+    ) => {
+        if (pendingItemOperationsRef.current.has(listItemId)) {
+            return false;
+        }
+
+        pendingItemOperationsRef.current.set(listItemId, operation);
+        setPendingItemOperations(new Map(pendingItemOperationsRef.current));
+        return true;
+    };
+
+    const finishItemOperation = (listItemId: string) => {
+        pendingItemOperationsRef.current.delete(listItemId);
+        setPendingItemOperations(new Map(pendingItemOperationsRef.current));
+    };
 
     const handleCreateListItem = async () => {
         const name = newListItemName.trim();
@@ -77,6 +106,10 @@ export function ListItems({
         listItemId: string,
         isCompleted: boolean
     ) => {
+        if (!startItemOperation(listItemId, 'updating')) {
+            return;
+        }
+
         try {
             await updateListItem({
                 id: listItemId,
@@ -86,6 +119,8 @@ export function ListItems({
             });
         } catch (error) {
             console.error('Failed to update list item:', error);
+        } finally {
+            finishItemOperation(listItemId);
         }
     };
 
@@ -93,6 +128,10 @@ export function ListItems({
         listItemId: string,
         listItemName: string
     ) => {
+        if (pendingItemOperationsRef.current.has(listItemId)) {
+            return;
+        }
+
         setEditingListItemId(listItemId);
         setEditingListItemName(listItemName);
     };
@@ -113,6 +152,10 @@ export function ListItems({
             return;
         }
 
+        if (!startItemOperation(editingListItemId, 'updating')) {
+            return;
+        }
+
         try {
             await updateListItem({
                 id: editingListItemId,
@@ -125,6 +168,8 @@ export function ListItems({
             setEditingListItemName('');
         } catch (error) {
             console.error('Failed to update list item:', error);
+        } finally {
+            finishItemOperation(editingListItemId);
         }
     };
 
@@ -134,10 +179,16 @@ export function ListItems({
             message: `Are you sure you want to delete "${listItemName}"?`,
             confirmText: 'Delete',
             onConfirm: async () => {
+                if (!startItemOperation(listItemId, 'deleting')) {
+                    return;
+                }
+
                 try {
                     await deleteListItem(listItemId);
                 } catch (error) {
                     console.error('Failed to delete list item:', error);
+                } finally {
+                    finishItemOperation(listItemId);
                 }
             },
         });
@@ -145,13 +196,16 @@ export function ListItems({
 
     const renderListItem = (listItem: (typeof listItems)[number]) => {
         const isEditing = editingListItemId === listItem.id;
+        const pendingOperation = pendingItemOperations.get(listItem.id);
+        const isUpdating = pendingOperation === 'updating';
+        const isDeleting = pendingOperation === 'deleting';
 
         if (isEditing) {
             return (
                 <EditListItem
                     key={listItem.id}
                     name={editingListItemName}
-                    isUpdating={isListItemUpdating}
+                    isUpdating={isUpdating}
                     onChangeName={setEditingListItemName}
                     onCancel={handleCancelEditingListItem}
                     onSave={handleSaveEditingListItem}
@@ -163,8 +217,8 @@ export function ListItems({
             <ListItem
                 key={listItem.id}
                 listItem={listItem}
-                isUpdating={isListItemUpdating}
-                isDeleting={isListItemDeleting}
+                isUpdating={isUpdating}
+                isDeleting={isDeleting}
                 onToggle={() =>
                     handleToggleListItem(listItem.id, listItem.is_completed)
                 }
@@ -180,14 +234,33 @@ export function ListItems({
 
     return (
         <View style={styles.container}>
-            {isLoading && <ActivityIndicator />}
-            {listItemsError && (
+            {isInitialLoading && <ActivityIndicator />}
+
+            {isInitialLoadPaused && (
+                <Text style={styles.offline}>
+                    Нет подключения к интернету. Подключитесь к сети, чтобы
+                    загрузить элементы списка.
+                </Text>
+            )}
+
+            {hasInitialLoadError && (
                 <View>
                     <Text style={styles.error}>
                         Не удалось загрузить элементы списка.
                     </Text>
-                    <Pressable onPress={() => void refetchListItems()}>
-                        <Text style={styles.retry}>Повторить</Text>
+                    <Pressable
+                        style={[
+                            styles.retryButton,
+                            isListItemsRefetching && styles.disabledButton,
+                        ]}
+                        onPress={() => void refetchListItems()}
+                        disabled={isListItemsRefetching}
+                    >
+                        {isListItemsRefetching ? (
+                            <ActivityIndicator size="small" color="#208AEF" />
+                        ) : (
+                            <Text style={styles.retry}>Повторить</Text>
+                        )}
                     </Pressable>
                 </View>
             )}
@@ -219,26 +292,32 @@ export function ListItems({
                 </View>
             )}
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>ACTIVE</Text>
+            {hasListItemsData && (
+                <>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>ACTIVE</Text>
 
-                <View style={styles.items}>
-                    {activeItems.map(renderListItem)}
+                        <View style={styles.items}>
+                            {activeItems.map(renderListItem)}
 
-                    {activeItems.length === 0 && (
-                        <Text style={styles.empty}>No active items.</Text>
-                    )}
-                </View>
-            </View>
-
-            {finishedItems.length > 0 && (
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>FINISHED</Text>
-
-                    <View style={styles.items}>
-                        {finishedItems.map(renderListItem)}
+                            {activeItems.length === 0 && (
+                                <Text style={styles.empty}>
+                                    No active items.
+                                </Text>
+                            )}
+                        </View>
                     </View>
-                </View>
+
+                    {finishedItems.length > 0 && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>FINISHED</Text>
+
+                            <View style={styles.items}>
+                                {finishedItems.map(renderListItem)}
+                            </View>
+                        </View>
+                    )}
+                </>
             )}
         </View>
     );
@@ -287,5 +366,16 @@ const styles = StyleSheet.create({
     error: {
         color: '#D32F2F',
     },
-    retry: { color: '#208AEF', fontSize: 15, fontWeight: '600', marginTop: 8 },
+    retryButton: {
+        alignSelf: 'flex-start',
+        marginTop: 8,
+    },
+    disabledButton: {
+        opacity: 0.6,
+    },
+    offline: {
+        color: '#7A5200',
+        lineHeight: 22,
+    },
+    retry: { color: '#208AEF', fontSize: 15, fontWeight: '600' },
 });
