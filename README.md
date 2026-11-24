@@ -1801,6 +1801,70 @@ deployments. The required check is `quality`, not the workflow name `CI`.
 
 Manual deployment workflows must not be configured as required merge checks.
 
+## Manual deployment recovery
+
+This is a minimal recovery of existing manual workflows, not comprehensive
+deployment hardening. It remains independent from quality CI and must never add
+automatic deployments or APK builds on a push or Pull Request.
+
+### Confirmed incident
+
+Manual `Supabase Development` run #31 completed setup and `supabase db push`,
+then failed before changing Edge Function `notify-list-members`: the hosted
+`supabase functions deploy` command required non-interactive confirmation and
+the workflow did not pass `--yes`. The CLI reported that no function was changed.
+It is not known whether migrations applied new changes or were already current;
+the APK preparation, build, and artifact steps were skipped. Do not describe the
+APK build as failed.
+
+### Minimal recovery changes
+
+- Pin Supabase CLI `3.3.0` in both workflows.
+- Use `--remote=<project ref>` and `--yes` for `db push` and Edge Function deploy.
+- Explicitly select Temurin JDK 17 before dependency installation and the Android
+  Gradle build.
+- Preserve the existing Development and Production secret-selected targets and
+  the migration → function → APK → artifact order.
+- Write the environment-appropriate runtime Sentry DSN into the generated env
+  file and expose private `SENTRY_AUTH_TOKEN` only to the APK build step.
+
+The workflow remains non-atomic. A manual retry must inspect the previous run;
+this minimal fix does not add branch guards, concurrency, preflight, signing
+changes, dynamic artifact naming, Auth config changes, or recovery automation.
+
+### Required GitHub configuration
+
+Existing secret names used by the workflows are:
+
+- `SUPABASE_ACCESS_TOKEN` — private Supabase CLI authentication token.
+- `SUPABASE_DEV_PROJECT_REF` / `SUPABASE_PROD_PROJECT_REF` — separate remote
+  targets.
+- `EXPO_PUBLIC_SUPABASE_DEV_URL` / `EXPO_PUBLIC_SUPABASE_PROD_URL` and matching
+  `EXPO_PUBLIC_SUPABASE_*_PUBLISHABLE_KEY` — environment-specific runtime config.
+
+Additional required secrets are `SENTRY_AUTH_TOKEN` for source-map upload and
+`EXPO_PUBLIC_SENTRY_DEV_DSN` / `EXPO_PUBLIC_SENTRY_PROD_DSN` for runtime delivery.
+The DSNs are public client configuration, but repository secrets avoid committing
+environment configuration; the auth token is private. No Android signing secret
+is defined by this plan: first verify the generated Android release signing
+behavior and agree a signing policy.
+
+### Verified Development recovery
+
+The updated Development workflow completed successfully: migrations and Edge
+Function deployment ran with Supabase CLI `3.3.0`, the configured Sentry secrets
+were available to the APK build, and Temurin JDK 17 was selected explicitly. The
+generated Development APK was installed and launched successfully on a physical
+Android device.
+
+This does not verify Production, Sentry event delivery or source-map
+symbolication for the CI-generated APK, or the full physical-device regression
+suite. Those checks remain manual and pending.
+
+Deferred decisions: branch guards, concurrency, GitHub Environments/approvals,
+preflight, dynamic artifact names, Android signing/tooling, Auth provider-key
+migration, and comprehensive partial-deployment recovery.
+
 # 38. GitHub Secrets
 
 Manual deployment workflows require their Supabase and APK-build secrets to be

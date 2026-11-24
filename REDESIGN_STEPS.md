@@ -92,9 +92,10 @@
 
 ### Next priority — UI/UX Redesign
 
-- [ ] Pending — начать после initial CI implementation и verification; до любых
-      UI changes провести screenshots, reference analysis, audit фактических
-      компонентов и Expo Router navigation/headers, затем согласовать visual concept.
+- [-] Partially completed — initial CI verification and the UI/UX architecture
+  audit on `feature/ui-ux-redesign` (`119d5b5`) are complete; the manual
+  Development deployment-recovery gate is also complete. Before UI changes,
+  capture screenshots, analyze references, and approve the visual concept.
 - [ ] Pending — проверить root cause технических Expo Router headers (`(app)`,
       `lists/[id]`), nested headers и duplicate Back buttons; не считать причину
       подтверждённой до аудита navigation tree.
@@ -184,14 +185,28 @@
       `workflow_dispatch` execution of CI and CI/ruleset behavior on `master`.
       The deployment and APK workflows are configured as manual-only, but their
       absence from the post-merge run history has not been independently recorded.
-- [ ] Deferred — manual deployment hardening, separate from initial CI and still
-      manual-only: Linux Sentry auth handling versus macOS Keychain fallback, early
-      prerequisite validation before remote changes, partial-deployment recovery,
-      Development/Production branch guards, pinned Supabase CLI, permissions and
-      concurrency, Production approvals where supported, dynamic artifact naming,
-      Java/Android prerequisites, and deployment verification/recovery procedures.
-      Confirmed configuration gaps must be separated from runtime failures not yet
-      reproduced.
+
+#### Manual deployment recovery
+
+- [x] Confirmed incident — manually dispatched `Supabase Development` run #31
+      stopped before changing Edge Function `notify-list-members`: the CLI needed
+      non-interactive `--yes`. The APK steps were skipped, not failed. Whether
+      `db push` applied new migrations or found the database current is unknown.
+- [x] Completed — minimal recovery is verified for Development: Supabase CLI
+      `3.3.0`, explicit `--remote=<project ref>`/`--yes`, configured Sentry secrets,
+      and Temurin JDK 17 completed migrations, Edge Function deployment, APK build
+      and artifact publication without workflow errors. The generated Development
+      APK was installed and launched successfully on a physical Android device.
+      Manual-only triggers, target selection and execution order remain unchanged.
+- [ ] Pending — verify a Production deployment before treating the same recovery
+      as proven for Production; verify Sentry event delivery and source-map
+      symbolication specifically for the CI-generated APK; complete the full
+      physical-device regression suite.
+- [ ] Deferred — optional hardening: branch guards, concurrency, GitHub
+      Environments/Production approval, preflight, dynamic artifact names,
+      Android signing/tooling validation, Auth-config deprecations, and explicit
+      partial-deployment recovery procedures. These are not part of minimal
+      recovery and must not change manual-only execution.
 - [ ] Deferred — Expo Doctor, JavaScript/component test infrastructure, local
       isolated Supabase pgTAP CI, investigation of the missing Supabase seed file,
       and Edge Function Deno validation. They are not part of initial quality CI.
@@ -215,4 +230,7 @@
 
 **Phase 10 — App Reliability & Error Monitoring (Partially completed; see closure criteria above)**
 
-**Next development priority after initial CI implementation and verification: UI/UX Redesign.**
+**Next development priority: UI/UX Redesign. Its completed architecture audit on
+`feature/ui-ux-redesign` (`119d5b5`) may now resume because minimal Development
+deployment recovery is verified; UI implementation still requires visual-concept
+approval and does not belong to this branch.**

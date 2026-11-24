@@ -95,10 +95,20 @@ Record APK name, environment, versionCode, device/Android version, network state
 3. **Completed in source:** `EXPO_PUBLIC_SENTRY_DSN` is runtime client configuration; private auth tokens are not `EXPO_PUBLIC_*` values. The monitoring code disables PII, screenshots, view hierarchy, replay, and failed-request capture.
 4. **Completed locally:** build scripts provide `SENTRY_ORG=alex-org-e0` and `SENTRY_PROJECT=shopping-list`, retrieve a non-public token from macOS Keychain when needed, and stop before prebuild if upload is enabled but credentials are absent.
 5. **Pending:** record an explicit privacy review of a received event, repeat delivery/symbolication for Production, and verify native crash reporting if it is in scope.
-6. **Deferred / separate manual-deployment hardening:** existing
+6. **Completed / Development manual-deployment recovery:** existing
    `workflow_dispatch` workflows attempt both Supabase migration/Edge Function
-   deployment and APK build/upload. They are not automatic CI. Before relying
-   on GitHub-hosted Linux APK builds, address Sentry authentication, early
-   prerequisite validation and partial-deployment recovery; any required token
-   remains a GitHub secret. The initial quality CI workflow must not build APKs
-   or upload Sentry artifacts.
+   deployment and APK build/upload; they are not automatic CI. Run #31 stopped
+   before changing `notify-list-members`, because Edge Function deploy lacked
+   `--yes`; the APK steps were skipped and must not be reported as failed. The
+   recovery pins CLI `3.3.0`, uses explicit `--remote` and `--yes` for remote
+   writes, passes the environment DSN into the generated env file, scopes
+   `SENTRY_AUTH_TOKEN` to the APK build, and explicitly selects Temurin JDK 17.
+   A subsequent Development dispatch completed migrations, Edge Function
+   deployment, APK build and artifact publication without errors; the resulting
+   APK installed and launched on a physical Android device.
+7. **Pending:** Production deployment verification, Sentry event delivery and
+   source-map symbolication for the CI-generated APK, and the complete
+   physical-device regression suite. Branch guards, concurrency, preflight,
+   signing, Auth config migration, dynamic artifact naming, and comprehensive
+   recovery remain deferred. Required private values stay GitHub secrets. The
+   initial quality CI workflow must not build APKs or upload Sentry artifacts.
