@@ -15,7 +15,7 @@ workflows. They can deploy Supabase migrations and Edge Functions, then build
 and upload the corresponding APK when explicitly started with
 `workflow_dispatch`. Pull Requests, merges and pushes do not deploy or build
 APKs. The separate quality-only CI workflow is implemented and verified on a
-Pull Request; its post-merge verification remains pending.
+Pull Request and after its merge into `develop`.
 
 ---
 
@@ -1781,9 +1781,12 @@ deployments or Sentry uploads.
 GitHub verification was completed on PR #49: the `quality` job passed, then an
 intentionally malformed temporary `ci-test.json` (commit `6ca0082`) failed
 Prettier and blocked merging. After removing that fixture, CI passed and the
-Merge pull request button became available again. The remaining verification is
-to merge PR #49, confirm the automatic post-merge CI run, and confirm that no
-deployment or APK workflow starts.
+Merge pull request button became available again. PR #49 was then merged into
+`develop` as `370e0c9`, and the repository owner confirmed that automatic
+post-merge CI passed. Manual `workflow_dispatch` CI and CI/ruleset execution on
+`master` remain unverified. Deployment and APK workflows are configured as
+manual-only; their absence from post-merge GitHub run history has not been
+independently verified.
 
 CI and deployment remain independent: a successful CI run never changes a
 remote environment, and a merge never starts a manual deployment workflow.

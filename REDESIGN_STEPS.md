@@ -175,11 +175,16 @@
       Rebase are allowed, and required deployments are disabled. `quality`, not
       the workflow name `CI`, is the configured required status check. Manual
       deployment workflows are not required merge checks.
-- [-] Partially completed — CI quality gate closing verification remains after
-  merging PR #49 into `develop`: verify the automatic post-merge CI run,
-  confirm that no deployment or APK workflow starts, then reconcile final CI
-  status.
-- [ ] Pending — manual deployment hardening, separate from initial CI and still
+- [x] Completed — PR #49 was merged into `develop` (merge commit `370e0c9`),
+      local `develop` was fast-forwarded to `origin/develop`, and the repository
+      owner confirmed a successful automatic post-merge `quality` run. The
+      temporary failure fixture remains removed; the intentional failure and
+      recovery commits remain as expected history.
+- [ ] Pending — optional trigger-scope verification not yet performed: manual
+      `workflow_dispatch` execution of CI and CI/ruleset behavior on `master`.
+      The deployment and APK workflows are configured as manual-only, but their
+      absence from the post-merge run history has not been independently recorded.
+- [ ] Deferred — manual deployment hardening, separate from initial CI and still
       manual-only: Linux Sentry auth handling versus macOS Keychain fallback, early
       prerequisite validation before remote changes, partial-deployment recovery,
       Development/Production branch guards, pinned Supabase CLI, permissions and

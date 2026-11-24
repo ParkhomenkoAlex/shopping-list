@@ -20,9 +20,15 @@ Status: **Completed** means manually verified evidence exists; **Partially compl
   branches must be up to date, force pushes and deletions are blocked, 0
   approvals are required, the bypass list is empty, and deployments are not
   required. `quality`, rather than workflow name `CI`, is the required check.
-- **Pending:** merge PR #49 into `develop`, verify the automatic post-merge CI
-  run, confirm that no deployment or APK workflow starts, and reconcile the
-  initial CI completion status.
+- **Completed:** PR #49 was merged into `develop` as `370e0c9`; local `develop`
+  was fast-forwarded to `origin/develop`, and the repository owner confirmed a
+  successful automatic post-merge `quality` run. The temporary failure fixture
+  remains removed; the intentional failure and recovery commits remain in
+  history as expected.
+- **Pending:** manual `workflow_dispatch` CI execution and CI/ruleset behavior
+  on `master` have not been verified. Deployment and APK workflows are
+  configured as manual-only, but their absence from post-merge run history has
+  not been independently confirmed.
 
 ## Emulator: Pixel 8
 
@@ -89,7 +95,7 @@ Record APK name, environment, versionCode, device/Android version, network state
 3. **Completed in source:** `EXPO_PUBLIC_SENTRY_DSN` is runtime client configuration; private auth tokens are not `EXPO_PUBLIC_*` values. The monitoring code disables PII, screenshots, view hierarchy, replay, and failed-request capture.
 4. **Completed locally:** build scripts provide `SENTRY_ORG=alex-org-e0` and `SENTRY_PROJECT=shopping-list`, retrieve a non-public token from macOS Keychain when needed, and stop before prebuild if upload is enabled but credentials are absent.
 5. **Pending:** record an explicit privacy review of a received event, repeat delivery/symbolication for Production, and verify native crash reporting if it is in scope.
-6. **Pending / separate manual-deployment hardening:** existing
+6. **Deferred / separate manual-deployment hardening:** existing
    `workflow_dispatch` workflows attempt both Supabase migration/Edge Function
    deployment and APK build/upload. They are not automatic CI. Before relying
    on GitHub-hosted Linux APK builds, address Sentry authentication, early
