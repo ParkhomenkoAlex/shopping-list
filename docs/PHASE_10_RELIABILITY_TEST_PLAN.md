@@ -6,6 +6,23 @@ Status: **Completed** means manually verified evidence exists; **Partially compl
 
 - Run `pnpm exec tsc --noEmit`, `pnpm lint`, and `pnpm exec expo config --type public --json >/dev/null` before an APK build. `expo-doctor` is not installed as a project executable, so `pnpm exec expo-doctor` is not a valid command in this repository; run `npx expo-doctor` separately only when that external tool is available.
 - The project did not previously include a test runner. Add component/provider tests when Jest or an equivalent test setup is adopted; do not add a second test framework solely for this phase.
+- **Completed:** the quality-only `CI` workflow and `typecheck`/`check` scripts
+  are implemented. On PR #49, the GitHub Actions `quality` job passed; the
+  workflow has no deployment, APK, emulator, remote Supabase or Sentry-upload
+  steps.
+- **Completed:** intentional failure verification. The malformed temporary
+  `ci-test.json` in commit `6ca0082` failed Prettier in GitHub CI despite being
+  committed with `--no-verify`; the required `quality` check blocked merging.
+  Removing the temporary file restored a successful CI result and merge
+  availability.
+- **Completed:** the active Ruleset `Protect develop and master` requires PRs
+  and the GitHub Actions `quality` status check for `develop` and `master`;
+  branches must be up to date, force pushes and deletions are blocked, 0
+  approvals are required, the bypass list is empty, and deployments are not
+  required. `quality`, rather than workflow name `CI`, is the required check.
+- **Pending:** merge PR #49 into `develop`, verify the automatic post-merge CI
+  run, confirm that no deployment or APK workflow starts, and reconcile the
+  initial CI completion status.
 
 ## Emulator: Pixel 8
 
@@ -72,4 +89,10 @@ Record APK name, environment, versionCode, device/Android version, network state
 3. **Completed in source:** `EXPO_PUBLIC_SENTRY_DSN` is runtime client configuration; private auth tokens are not `EXPO_PUBLIC_*` values. The monitoring code disables PII, screenshots, view hierarchy, replay, and failed-request capture.
 4. **Completed locally:** build scripts provide `SENTRY_ORG=alex-org-e0` and `SENTRY_PROJECT=shopping-list`, retrieve a non-public token from macOS Keychain when needed, and stop before prebuild if upload is enabled but credentials are absent.
 5. **Pending:** record an explicit privacy review of a received event, repeat delivery/symbolication for Production, and verify native crash reporting if it is in scope.
-6. **Pending:** GitHub Actions APK workflow. Existing workflows deploy Supabase only; any future APK workflow must use CI secrets for the token.
+6. **Pending / separate manual-deployment hardening:** existing
+   `workflow_dispatch` workflows attempt both Supabase migration/Edge Function
+   deployment and APK build/upload. They are not automatic CI. Before relying
+   on GitHub-hosted Linux APK builds, address Sentry authentication, early
+   prerequisite validation and partial-deployment recovery; any required token
+   remains a GitHub secret. The initial quality CI workflow must not build APKs
+   or upload Sentry artifacts.

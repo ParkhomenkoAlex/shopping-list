@@ -10,12 +10,12 @@ The project supports three completely separated environments:
 
 The environments use different Android application IDs, so the applications can be installed independently on the same Android device.
 
-The project also uses GitHub Actions to automatically:
-
-- apply Supabase migrations;
-- build Development APKs after changes reach `develop`;
-- build Production APKs after changes reach `master`;
-- generate unique Android build numbers.
+GitHub Actions currently provides manual Development and Production deployment
+workflows. They can deploy Supabase migrations and Edge Functions, then build
+and upload the corresponding APK when explicitly started with
+`workflow_dispatch`. Pull Requests, merges and pushes do not deploy or build
+APKs. The separate quality-only CI workflow is implemented and verified on a
+Pull Request; its post-merge verification remains pending.
 
 ---
 
@@ -576,7 +576,9 @@ Android package:
 com.anonymous.shoppinglist.dev
 ```
 
-The Development database is updated automatically by GitHub Actions when migrations are merged into `develop`.
+The Development database is changed only by an explicitly dispatched Development
+deployment workflow. Merging into `develop` does not deploy migrations, Edge
+Functions or an APK.
 
 ---
 
@@ -596,7 +598,9 @@ Android package:
 com.anonymous.shoppinglist
 ```
 
-The Production database is updated automatically by GitHub Actions when migrations are merged into `master`.
+The Production database is changed only by an explicitly dispatched Production
+deployment workflow. Merging into `master` does not deploy migrations, Edge
+Functions or an APK.
 
 ---
 
@@ -721,7 +725,8 @@ This makes it easy to identify exactly which build is installed.
 
 ## GitHub Actions build numbers
 
-GitHub Actions automatically generates build numbers.
+The manual GitHub Actions deployment workflows generate build numbers when they
+are run.
 
 Development:
 
@@ -1749,4 +1754,53 @@ Then create a Pull Request into `develop`.
 
 ---
 
-# 37. GitHub Acti
+# 37. GitHub Actions
+
+## Current policy
+
+The repository currently has two manual-only deployment workflows:
+
+- `Supabase Development` (`.github/workflows/supabase-development.yml`)
+- `Supabase Production` (`.github/workflows/supabase-production.yml`)
+
+They are started through `workflow_dispatch`. Each workflow can deploy
+Supabase migrations and Edge Functions, then build and upload the matching
+Android APK. They do not run from Pull Requests, pushes or merges.
+
+Do not treat these manual deployment workflows as code-quality checks or as
+required merge checks.
+
+## Quality CI
+
+The repository contains a separate `CI` workflow for Pull Requests and pushes
+to `develop` and `master`, plus manual execution. It installs the locked pnpm
+dependency graph and runs Prettier, ESLint, TypeScript and Expo public-config
+validation without credentials, remote Supabase access, APK builds, emulators,
+deployments or Sentry uploads.
+
+GitHub verification was completed on PR #49: the `quality` job passed, then an
+intentionally malformed temporary `ci-test.json` (commit `6ca0082`) failed
+Prettier and blocked merging. After removing that fixture, CI passed and the
+Merge pull request button became available again. The remaining verification is
+to merge PR #49, confirm the automatic post-merge CI run, and confirm that no
+deployment or APK workflow starts.
+
+CI and deployment remain independent: a successful CI run never changes a
+remote environment, and a merge never starts a manual deployment workflow.
+
+## Branch protection
+
+The active GitHub Ruleset `Protect develop and master` covers `develop` and
+`master`. It requires Pull Requests (0 approvals), the GitHub Actions status
+check `quality`, and up-to-date branches; it blocks force pushes and deletions,
+has an empty bypass list, allows Merge/Squash/Rebase, and has no required
+deployments. The required check is `quality`, not the workflow name `CI`.
+
+Manual deployment workflows must not be configured as required merge checks.
+
+# 38. GitHub Secrets
+
+Manual deployment workflows require their Supabase and APK-build secrets to be
+configured only in GitHub Actions. The quality CI workflow requires no Supabase,
+Sentry, Android signing or production credentials. Never add secret values to
+source files, workflow YAML, `.env` files or pull-request logs.

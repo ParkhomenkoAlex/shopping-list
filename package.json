@@ -2,6 +2,7 @@
     "name": "shopping-list",
     "main": "expo-router/entry",
     "version": "1.0.0",
+    "packageManager": "pnpm@10.11.0",
     "dependencies": {
         "@expo/vector-icons": "^15.1.1",
         "@react-native-community/netinfo": "12.0.1",
@@ -48,6 +49,8 @@
         "prod:pixel9": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_9 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist; done'",
         "prod:pixel10": "dotenv -e .env.production -- cross-env EXPO_NO_DOTENV=1 sh -c 'expo prebuild --clean --platform android && expo run:android --device Pixel_10 --no-bundler; for DEVICE in $(adb devices | grep \"^emulator-\" | cut -f1); do adb -s \"$DEVICE\" reverse tcp:8081 tcp:8081; adb -s \"$DEVICE\" shell am force-stop com.anonymous.shoppinglist; adb -s \"$DEVICE\" shell am start -a android.intent.action.VIEW -d \"shoppinglist://expo-development-client/?url=http://127.0.0.1:8081\" -p com.anonymous.shoppinglist; done'",
         "lint": "expo lint",
+        "typecheck": "tsc --noEmit",
+        "check": "pnpm format:check && pnpm lint && pnpm typecheck",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "db:status": "supabase status",

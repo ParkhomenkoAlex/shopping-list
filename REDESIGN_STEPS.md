@@ -90,6 +90,26 @@
 - [ ] Проверка Android / iOS.
 - [ ] Привести все модалки к единому визуальному стилю и исправить их UI/UX.
 
+### Next priority — UI/UX Redesign
+
+- [ ] Pending — начать после initial CI implementation и verification; до любых
+      UI changes провести screenshots, reference analysis, audit фактических
+      компонентов и Expo Router navigation/headers, затем согласовать visual concept.
+- [ ] Pending — проверить root cause технических Expo Router headers (`(app)`,
+      `lists/[id]`), nested headers и duplicate Back buttons; не считать причину
+      подтверждённой до аудита navigation tree.
+- [ ] Pending — Modern Premium Minimalism — только предварительное направление:
+      forest/sage green accents, warm neutral backgrounds, clean typography,
+      rounded surfaces и restrained effects; это не утверждённый final design.
+- [ ] Pending — references: Apple Reminders (typography/minimal navigation/
+      checklist), AnyList (grocery organization/collaboration), Bring! (shopping
+      engagement/product presentation), Todoist (hierarchy/interactions/polish).
+- [ ] Pending — future scope: navigation/headers, theme tokens/shared design
+      system, My Lists, List Details, List Items, Create/Add Item, Sharing Modal,
+      auth, loading/empty/error/offline states, accessibility, light/dark themes,
+      micro-interactions и haptics. Preserve authentication, sharing, realtime,
+      loading/retry/offline behavior и navigation reliability.
+
 ## Phase 10 — App Reliability & Error Monitoring
 
 **Цель:** исключить намеренный blank screen при старте и recoverable failures, сохранить валидную локальную Supabase session, честно показывать offline-состояния и подготовить проверяемый production monitoring.
@@ -131,6 +151,46 @@
 - [ ] Pending — startup/auth recovery on Android phone #1 and #2; slow/unstable network; Supabase unavailability; background/token refresh; update-over-existing-session; deep links and notification taps.
 - [ ] Pending — Production error delivery, privacy event audit, native symbolication, and a final regression pass using `docs/PHASE_10_RELIABILITY_TEST_PLAN.md`.
 
+### CI quality gate and manual deployment hardening
+
+- [x] Completed — initial quality CI is configured in `.github/workflows/ci.yml`
+      and was verified by PR #49 (initial implementation commit `af3e3fd`): one
+      stable `quality` job runs for PRs and pushes to `develop`/`master`, plus
+      `workflow_dispatch`; frozen pnpm install, Prettier, ESLint, TypeScript and
+      Expo public-config validation remain separate steps with Node 22, pnpm
+      10.11.0, cache, minimal permissions, stale-run cancellation and no
+      environment credentials. It cannot deploy, build APKs, use emulators or
+      upload Sentry artifacts.
+- [x] Completed — `typecheck` and aggregate local `check` scripts are
+      implemented; pnpm 10.11.0 is pinned in package metadata. CI still uses
+      individual workflow steps for readable diagnostics.
+- [x] Completed — GitHub CI verification: the `quality` job passed for PR #49;
+      an intentionally malformed `ci-test.json` in commit `6ca0082` failed
+      Prettier independently of local hooks, blocked merging as a required check,
+      and CI passed again after the temporary file was removed.
+- [x] Completed — active GitHub Ruleset `Protect develop and master` protects
+      `develop` and `master`: PRs are required (0 approvals), GitHub Actions
+      status check `quality` is required and branches must be up to date; force
+      pushes and deletions are blocked, the bypass list is empty, Merge/Squash/
+      Rebase are allowed, and required deployments are disabled. `quality`, not
+      the workflow name `CI`, is the configured required status check. Manual
+      deployment workflows are not required merge checks.
+- [-] Partially completed — CI quality gate closing verification remains after
+  merging PR #49 into `develop`: verify the automatic post-merge CI run,
+  confirm that no deployment or APK workflow starts, then reconcile final CI
+  status.
+- [ ] Pending — manual deployment hardening, separate from initial CI and still
+      manual-only: Linux Sentry auth handling versus macOS Keychain fallback, early
+      prerequisite validation before remote changes, partial-deployment recovery,
+      Development/Production branch guards, pinned Supabase CLI, permissions and
+      concurrency, Production approvals where supported, dynamic artifact naming,
+      Java/Android prerequisites, and deployment verification/recovery procedures.
+      Confirmed configuration gaps must be separated from runtime failures not yet
+      reproduced.
+- [ ] Deferred — Expo Doctor, JavaScript/component test infrastructure, local
+      isolated Supabase pgTAP CI, investigation of the missing Supabase seed file,
+      and Edge Function Deno validation. They are not part of initial quality CI.
+
 ### Phase 10 evidence and closure criteria
 
 - [x] Completed — Dev APKs `200`, `201`, and `202` supplied the listed startup/offline/reconnect/Sentry/build-workflow evidence.
@@ -149,3 +209,5 @@
 ## Current Phase
 
 **Phase 10 — App Reliability & Error Monitoring (Partially completed; see closure criteria above)**
+
+**Next development priority after initial CI implementation and verification: UI/UX Redesign.**
