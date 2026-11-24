@@ -52,12 +52,16 @@ implementations.
     - A successful empty response displays the existing empty copy.
     - Cached active/finished items stay visible through reconnect/refetch.
     - Existing Retry and create/edit/delete flows remain available as appropriate.
-- **Verification:** static verification is complete: the query now exposes
-  whether it has usable data, and the UI gates the spinner/error/sections on
-  that state. `tsc`, ESLint, Prettier, and `git diff --check` must pass. Pending
-  manual Android verification: cold-open a list with data, with no items, and
-  with a forced request failure; repeat with slow network, airplane mode, and
-  reconnect.
+- **Verification:** static verification is complete. Preliminary Android Dev
+  verification passed for a forced request error, Retry pending feedback, and
+  recovery, normal list loading, and offline cached-data preservation. Still
+  unverified: the complete initial-loading/empty/slow-network matrix and final
+  regression testing.
+- **Retry pending-state correction:** the initial implementation left Retry
+  active without progress feedback. `useListItems` now exposes its refetching
+  state; while Retry is active, the control is disabled and shows the same
+  inline `ActivityIndicator` pattern as LI-02 and LI-03. Preliminary Android
+  Dev verification passed; exhaustive regression coverage remains pending.
 - **Dependencies:** none.
 
 ### LI-02 — List-details error recovery
@@ -77,12 +81,10 @@ implementations.
     - Retry works without navigating away.
     - Offline does not imply that the list was deleted or inaccessible.
     - Cached list details remain visible during background refetch.
-- **Verification:** static implementation is complete: the hook distinguishes
-  cached data from an initial request, and the screen uses the existing refetch
-  function with a disabled pending Retry action. `tsc`, ESLint, Prettier, and
-  `git diff --check` must pass. Pending manual Android verification: open an
-  existing and a missing list; force ordinary error, offline error, slow
-  response, reconnect, and Retry; verify deep-link routing.
+- **Verification:** static implementation is complete. Preliminary Android Dev
+  verification passed for a forced request error, Retry, and recovery. Still
+  unverified: missing-list and deep-link paths, slow-network behavior, and
+  final regression testing.
 - **Dependencies:** LI-01 is not required.
 
 ### LI-03 — Sharing Modal error recovery
@@ -101,11 +103,11 @@ implementations.
     - Failed member loading has a Retry action in the same modal.
     - Retry does not close the modal or clear the pending add-member form.
     - Add/remove member mutation feedback keeps working.
-- **Verification:** static implementation is complete: the hook exposes member
-  data presence and refetch state, while the modal retries in place without
-  showing raw request errors. `tsc`, ESLint, Prettier, and `git diff --check`
-  must pass. Pending manual Android verification: force a member-query failure,
-  Retry in place, then add and remove a member under normal and slow networks.
+- **Verification:** static implementation is complete. Preliminary Android Dev
+  verification passed for the member-load error and recovery. Retry recovery
+  while the same Android modal remains open is unverified: that modal blocked
+  access to the temporary fault control. Add/remove member behavior under slow
+  network and final regression testing also remain unverified.
 - **Dependencies:** none.
 
 ### LI-04 — Per-item pending states
@@ -129,9 +131,10 @@ implementations.
 - **Verification:** static implementation is complete: component-level pending
   operations are keyed by item ID, with a synchronous ref guard against repeated
   presses. `tsc`, ESLint, Prettier, and `git diff --check` must pass. Pending
-  manual Android verification: under throttled network toggle, edit, and delete
-  one item; attempt actions on another item; retry after error and verify
-  realtime update.
+  manual Android verification: normal toggle, creation, and deletion were
+  preliminarily passed on the Dev emulator. Concurrent operations on different
+  items, mutation failure/pending-state cleanup, throttled network, and realtime
+  update remain unverified.
 - **Dependencies:** LI-01 should be implemented first to make item-state tests
   unambiguous.
 
@@ -150,10 +153,10 @@ implementations.
   request while pending; a failed sign-out is understandable and retryable.
 - **Verification:** static implementation is complete: a synchronous ref guards
   rapid presses, the action is disabled while pending, and a generic error is
-  rendered after failure. `tsc`, ESLint, Prettier, and `git diff --check` must
-  pass. Pending manual Android verification: throttle/fail sign-out and tap
-  repeatedly; then verify a successful sign-out still reaches the
-  unauthenticated route.
+  rendered after failure. `tsc`, ESLint, Prettier, and `git diff --check` pass.
+  Normal logout and subsequent login were preliminarily passed on the Dev
+  emulator. A forced sign-out failure, repeated taps while pending, and final
+  regression remain unverified.
 - **Dependencies:** none.
 
 ### LI-06 — Per-member pending state
@@ -170,33 +173,37 @@ implementations.
 - **Verification:** static implementation is complete: component-level pending
   member IDs permit independent removals while a ref prevents duplicate
   confirmation actions for the same member. `tsc`, ESLint, Prettier, and
-  `git diff --check` must pass. Pending manual Android verification: remove one
-  member over slow network and interact with a different member; verify success
-  and failure paths.
+  `git diff --check` pass. The Sharing Modal's normal behavior was
+  preliminarily passed on the Dev emulator. Concurrent removals, interaction
+  with another member during a pending removal, mutation failure/pending-state
+  cleanup, and slow-network behavior remain unverified.
 - **Dependencies:** LI-03 is recommended first.
 
 ### LI-07 — Duplicate navigation prevention
 
 - **Priority:** P2
-- **Status:** Needs Verification
-- **Problem:** rapid repeated taps on a list card might push duplicate detail
-  routes. This is a hypothesis, not a confirmed defect.
+- **Status:** Completed
+- **Problem:** confirmed on the Dev Android emulator: quickly double-tapping
+  the same list card pushes the same detail route twice. One Back action then
+  reveals the duplicate detail screen instead of returning to My Lists.
 - **Relevant files:** `src/components/lists/ListCard.tsx`,
   `src/app/(app)/lists/index.tsx`.
 - **Static investigation:** `ListCard` invokes its supplied `onPress` without a
   local lock, and `ListsScreen` calls `router.push` for every press. In the
   installed Expo Router SDK 57, each `router.push` adds a `PUSH` action to the
-  routing queue; this path has no application-level deduplication. This is a
-  plausible risk, not a confirmed user-visible defect without device
-  reproduction.
-- **Proposed implementation:** do not change code until reproduced. If it is
-  visible in practice, compare `router.navigate` with a narrowly scoped
-  press-locking solution. Select only an option that preserves deep links and
-  expected back-stack behavior.
-- **Acceptance criteria:** only after reproduction is confirmed; a rapid tap
-  must not create duplicate detail screens or block a legitimate later tap.
-- **Verification:** rapidly tap one and multiple cards on a physical/emulated
-  Android device, including under slow network; inspect the back stack.
+  routing queue; this path has no application-level deduplication.
+- **Implementation:** `ListsScreen` retains `router.push` to preserve existing
+  stack semantics. A synchronous `Set<listId>` blocks only repeated pending
+  navigation for the same card. Expo Router's `useFocusEffect` clears the set
+  whenever My Lists regains focus, so the same card can be opened immediately
+  after Back. `router.navigate` was not selected because its existing-route
+  semantics could change history behavior for dynamic list routes.
+- **Acceptance criteria:** a rapid tap must not create duplicate detail screens
+  or block a legitimate later tap after returning to My Lists.
+- **Verification:** confirmed on the Dev Android emulator: rapid double and
+  multiple taps on the same card open only one details screen, and one Back
+  returns to My Lists. Opening a different list normally also works. Rapid
+  taps on different cards remain unverified.
 - **Dependencies:** manual reproduction is mandatory.
 
 ## Deferred product decision
@@ -226,7 +233,7 @@ implementations.
 ### LI-09 — Manual verification matrix
 
 - **Priority:** P1
-- **Status:** Pending
+- **Status:** In Progress
 - **Problem:** the proposed UI changes need device-level validation under real
   timing and connectivity conditions.
 - **Relevant files:** all files changed by LI-01 through LI-06; detailed
@@ -242,11 +249,43 @@ implementations.
     | Offline then reconnect        | Offline data remains honest; cached data remains visible; eligible queries recover after reconnect.      |
     | Slow network                  | Pending controls cannot submit duplicates and clearly identify the affected operation.                   |
     | Background refetch with cache | Existing lists/items/members stay visible; no full-screen flicker.                                       |
-    | Rapid repeated taps           | Verify LI-07 before any code change; no duplicate navigation if reproduction is confirmed and fixed.     |
+    | Rapid repeated taps           | Same-card duplicate navigation is confirmed fixed; rapid taps on different cards remain unverified.      |
     | Create/edit/delete            | Each operation disables only its relevant control, shows result/error, and preserves existing behavior.  |
     | Item completion toggle        | Only the selected item is pending; other items remain usable.                                            |
     | Sharing Modal                 | Member load Retry works in place; add/remove operations keep their existing feedback.                    |
     | Navigation                    | Lists, list details, back navigation, deep links, and notification paths retain their existing behavior. |
+
+- **Confirmed Dev emulator finding:** cached lists remained accessible offline,
+  but opening a previously uncached list showed an indefinite spinner while the
+  global offline banner was visible. React Query reported the initial query as
+  `isPending: true` and `isPaused: true`: `isPending` alone did not mean an
+  active fetch. Reconnection loaded the data automatically. The hooks and UI
+  now treat a paused initial query without cached data as offline/unavailable
+  data; manual retest of list details, items, and sharing remains required.
+
+- **Preliminary Android Dev results:** forced request failures showed the
+  LI-01 items error, Retry pending state, and recovery; the LI-02 details error,
+  Retry, and recovery; and the LI-03 member-load error and recovery. Cached
+  list details, items, and shared members remained visible during a failed
+  refetch in these preliminary checks. After the temporary test infrastructure
+  was removed, preliminary Dev emulator regression feedback also covered My
+  Lists and List Details loading, item toggle/creation/deletion, Sharing Modal,
+  same-card duplicate-navigation prevention, logout/login, offline cached data,
+  automatic reconnect, and normal operation without fault injection. These
+  results do not complete the full regression matrix.
+
+- **Unverified:** LI-03 recovery through Retry without closing the Android
+  modal was not verified, because the modal prevented access to the temporary
+  test control used to remove the injected failure. The control was removed
+  after testing; this path needs a future non-intrusive failure test or another
+  suitable manual test method. Also unverified: concurrent per-item/per-member
+  operations, mutation-failure pending-state cleanup, rapid taps on different
+  cards, deep links and notification navigation regression, and physical-device
+  verification.
+
+- **Localization follow-up (out of scope):** loading, error, and action copy is
+  currently mixed Russian/English. Consolidating user-facing language is a
+  separate product/localization task and is not part of LI-01 through LI-09.
 
 - **Acceptance criteria:** execute the applicable matrix on Android emulator;
   repeat the risk-critical offline/reconnect and navigation cases on a real
@@ -262,5 +301,6 @@ implementations.
 4. Run the required parts of **LI-09** on Android emulator.
 5. **LI-05** and **LI-06** are implemented; Android verification remains
    pending.
-6. Run **LI-07** only as a manual investigation; implement only if reproduced.
+6. **LI-07** is complete for repeated taps on the same card; retain the
+   unverified rapid-different-card case in final regression testing.
 7. Keep **LI-08** deferred until the product chooses offline-mutation semantics.

@@ -28,6 +28,8 @@ export function ListItems({
         listItems,
         hasListItemsData,
         isLoading,
+        isPaused,
+        isRefetching: isListItemsRefetching,
         error: listItemsError,
         refetchListItems,
         isCreating,
@@ -56,7 +58,8 @@ export function ListItems({
 
     const finishedItems = listItems.filter((listItem) => listItem.is_completed);
 
-    const isInitialLoading = isLoading && !hasListItemsData;
+    const isInitialLoading = isLoading && !hasListItemsData && !isPaused;
+    const isInitialLoadPaused = isPaused && !hasListItemsData;
     const hasInitialLoadError = Boolean(listItemsError) && !hasListItemsData;
 
     const startItemOperation = (
@@ -233,13 +236,31 @@ export function ListItems({
         <View style={styles.container}>
             {isInitialLoading && <ActivityIndicator />}
 
+            {isInitialLoadPaused && (
+                <Text style={styles.offline}>
+                    Нет подключения к интернету. Подключитесь к сети, чтобы
+                    загрузить элементы списка.
+                </Text>
+            )}
+
             {hasInitialLoadError && (
                 <View>
                     <Text style={styles.error}>
                         Не удалось загрузить элементы списка.
                     </Text>
-                    <Pressable onPress={() => void refetchListItems()}>
-                        <Text style={styles.retry}>Повторить</Text>
+                    <Pressable
+                        style={[
+                            styles.retryButton,
+                            isListItemsRefetching && styles.disabledButton,
+                        ]}
+                        onPress={() => void refetchListItems()}
+                        disabled={isListItemsRefetching}
+                    >
+                        {isListItemsRefetching ? (
+                            <ActivityIndicator size="small" color="#208AEF" />
+                        ) : (
+                            <Text style={styles.retry}>Повторить</Text>
+                        )}
                     </Pressable>
                 </View>
             )}
@@ -345,5 +366,16 @@ const styles = StyleSheet.create({
     error: {
         color: '#D32F2F',
     },
-    retry: { color: '#208AEF', fontSize: 15, fontWeight: '600', marginTop: 8 },
+    retryButton: {
+        alignSelf: 'flex-start',
+        marginTop: 8,
+    },
+    disabledButton: {
+        opacity: 0.6,
+    },
+    offline: {
+        color: '#7A5200',
+        lineHeight: 22,
+    },
+    retry: { color: '#208AEF', fontSize: 15, fontWeight: '600' },
 });

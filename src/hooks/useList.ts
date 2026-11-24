@@ -30,6 +30,7 @@ export function useList(id?: string) {
     const {
         data: listData,
         isPending: isListLoading,
+        isPaused: isListPaused,
         isFetching: isListFetching,
         error: listError,
         refetch: refetchList,
@@ -163,6 +164,7 @@ export function useList(id?: string) {
         list: listData ?? null,
         hasListData: listData !== undefined,
         isListLoading,
+        isListPaused,
         isListRefetching: isListFetching && !isListLoading,
         listError,
         refetchList,

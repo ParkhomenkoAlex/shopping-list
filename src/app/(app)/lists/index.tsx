@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
@@ -23,9 +23,28 @@ export default function ListsScreen() {
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [signOutError, setSignOutError] = useState<string | null>(null);
     const isSigningOutRef = useRef(false);
+    const pendingListNavigationIdsRef = useRef<Set<string>>(new Set());
     const netInfo = useNetInfo();
     const isOffline =
         netInfo.isConnected === false && netInfo.isInternetReachable !== true;
+
+    useFocusEffect(
+        useCallback(() => {
+            pendingListNavigationIdsRef.current.clear();
+        }, [])
+    );
+
+    const handleOpenList = (listId: string) => {
+        if (pendingListNavigationIdsRef.current.has(listId)) {
+            return;
+        }
+
+        pendingListNavigationIdsRef.current.add(listId);
+        router.push({
+            pathname: '/lists/[id]',
+            params: { id: listId },
+        });
+    };
 
     const handleSignOut = async () => {
         if (isSigningOutRef.current) {
@@ -85,14 +104,7 @@ export default function ListsScreen() {
                     <ListCard
                         key={list.id}
                         list={list}
-                        onPress={() =>
-                            router.push({
-                                pathname: '/lists/[id]',
-                                params: {
-                                    id: list.id,
-                                },
-                            })
-                        }
+                        onPress={() => handleOpenList(list.id)}
                     />
                 ))}
 

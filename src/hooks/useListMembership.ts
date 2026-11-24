@@ -29,6 +29,7 @@ export function useListMembership(
     const {
         data: sharedMembersData,
         isPending: isSharedMembersLoading,
+        isPaused: isSharedMembersPaused,
         isFetching: isSharedMembersFetching,
         error: sharedMembersError,
         refetch: refetchSharedMembers,
@@ -115,6 +116,7 @@ export function useListMembership(
         sharedMembers: sharedMembersData ?? [],
         hasSharedMembersData: sharedMembersData !== undefined,
         isSharedMembersLoading,
+        isSharedMembersPaused,
         isSharedMembersRefetching:
             isSharedMembersFetching && !isSharedMembersLoading,
         sharedMembersError,

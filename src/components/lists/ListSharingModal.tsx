@@ -33,6 +33,7 @@ export function ListSharingModal({
         sharedMembers,
         hasSharedMembersData,
         isSharedMembersLoading,
+        isSharedMembersPaused,
         isSharedMembersRefetching,
         sharedMembersError,
         refetchSharedMembers,
@@ -52,7 +53,11 @@ export function ListSharingModal({
 
     const isOwner = memberRole === 'owner';
     const isInitialMembersLoading =
-        isSharedMembersLoading && !hasSharedMembersData;
+        isSharedMembersLoading &&
+        !hasSharedMembersData &&
+        !isSharedMembersPaused;
+    const isInitialMembersPaused =
+        isSharedMembersPaused && !hasSharedMembersData;
     const hasInitialMembersError =
         Boolean(sharedMembersError) && !hasSharedMembersData;
 
@@ -150,6 +155,13 @@ export function ListSharingModal({
 
                         {isInitialMembersLoading && (
                             <ActivityIndicator style={styles.loader} />
+                        )}
+
+                        {isInitialMembersPaused && (
+                            <Text style={styles.offline}>
+                                Нет подключения к интернету. Подключитесь к
+                                сети, чтобы загрузить участников.
+                            </Text>
                         )}
 
                         {hasInitialMembersError && (
@@ -487,6 +499,13 @@ const styles = StyleSheet.create({
     error: {
         color: '#D32F2F',
         fontSize: 13,
+        marginTop: 8,
+    },
+
+    offline: {
+        color: '#7A5200',
+        fontSize: 13,
+        lineHeight: 20,
         marginTop: 8,
     },
 

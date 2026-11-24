@@ -35,6 +35,7 @@ export default function ListDetailsScreen() {
         hasListData,
         memberRole,
         isListLoading,
+        isListPaused,
         isListRefetching,
         listError,
         refetchList,
@@ -55,7 +56,8 @@ export default function ListDetailsScreen() {
     const netInfo = useNetInfo();
     const isOffline =
         netInfo.isConnected === false && netInfo.isInternetReachable !== true;
-    const isInitialListLoading = isListLoading && !hasListData;
+    const isInitialListLoading = isListLoading && !hasListData && !isListPaused;
+    const isInitialListPaused = isListPaused && !hasListData;
     const hasInitialListError = Boolean(listError) && !hasListData;
 
     const handleOpenActions = (anchor: MenuAnchor) => {
@@ -119,6 +121,15 @@ export default function ListDetailsScreen() {
             {isInitialListLoading && (
                 <View style={styles.loading}>
                     <ActivityIndicator />
+                </View>
+            )}
+
+            {isInitialListPaused && (
+                <View style={styles.loadError}>
+                    <Text style={styles.offline}>
+                        Нет подключения к интернету. Подключитесь к сети, чтобы
+                        загрузить список.
+                    </Text>
                 </View>
             )}
 
@@ -254,6 +265,11 @@ const styles = StyleSheet.create({
     error: {
         color: '#D32F2F',
         marginBottom: 16,
+    },
+    offline: {
+        color: '#7A5200',
+        lineHeight: 22,
+        textAlign: 'center',
     },
     loadError: {
         flex: 1,

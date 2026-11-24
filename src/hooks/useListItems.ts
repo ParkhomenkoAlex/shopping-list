@@ -15,6 +15,8 @@ export function useListItems(listId: string | undefined) {
     const {
         data: listItemsData,
         isPending: isListItemsLoading,
+        isPaused: isListItemsPaused,
+        isFetching: isListItemsFetching,
         error: listItemsError,
         refetch: refetchListItems,
     } = useQuery({
@@ -93,6 +95,8 @@ export function useListItems(listId: string | undefined) {
         listItems: listItemsData ?? [],
         hasListItemsData: listItemsData !== undefined,
         isLoading: isListItemsLoading,
+        isPaused: isListItemsPaused,
+        isRefetching: isListItemsFetching && !isListItemsLoading,
         error: listItemsError,
         refetchListItems,
 

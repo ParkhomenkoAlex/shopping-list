@@ -67,8 +67,12 @@
 - [ ] Empty list.
 - [x] Нет активных items.
 - [x] Есть только Finished items.
-- [-] Loading state — частично реализован; детальный план исправлений и проверок: [`docs/LOADING_INDICATORS_PLAN.md`](docs/LOADING_INDICATORS_PLAN.md).
-- [ ] Error state + Retry.
+- [-] Loading state — частично реализован; primary Dev emulator regression
+  предварительно пройден, но полный matrix и физические устройства остаются
+  pending. Детальный план и evidence: [`docs/LOADING_INDICATORS_PLAN.md`](docs/LOADING_INDICATORS_PLAN.md).
+- [-] Error state + Retry — реализованы для основных list/item/sharing flows;
+  preliminary Dev emulator verification пройдена, но исчерпывающие failure,
+  deep-link/notification и physical-device проверки остаются pending.
 
 ### 9. Финальный UI Polish
 
