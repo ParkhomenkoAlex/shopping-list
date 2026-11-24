@@ -92,9 +92,10 @@
 
 ### Next priority — UI/UX Redesign
 
-- [ ] Pending — начать после initial CI implementation и verification; до любых
-      UI changes провести screenshots, reference analysis, audit фактических
-      компонентов и Expo Router navigation/headers, затем согласовать visual concept.
+- [-] Partially completed — initial CI verification and the UI/UX architecture
+  audit on `feature/ui-ux-redesign` (`119d5b5`) are complete; the manual
+  Development deployment-recovery gate is also complete. Before UI changes,
+  capture screenshots, analyze references, and approve the visual concept.
 - [ ] Pending — проверить root cause технических Expo Router headers (`(app)`,
       `lists/[id]`), nested headers и duplicate Back buttons; не считать причину
       подтверждённой до аудита navigation tree.
@@ -191,14 +192,16 @@
       stopped before changing Edge Function `notify-list-members`: the CLI needed
       non-interactive `--yes`. The APK steps were skipped, not failed. Whether
       `db push` applied new migrations or found the database current is unknown.
-- [-] Partially completed — minimal source recovery pins Supabase CLI `3.3.0`,
-  uses explicit `--remote=<project ref>` and `--yes` for Dev/Prod database and
-  Edge Function writes, injects the environment DSN, and scopes
-  `SENTRY_AUTH_TOKEN` to the APK build step. It retains manual-only triggers,
-  target selection and execution order. GitHub runtime verification is pending.
-- [ ] Pending — configure `SENTRY_AUTH_TOKEN`, `EXPO_PUBLIC_SENTRY_DEV_DSN`, and
-      `EXPO_PUBLIC_SENTRY_PROD_DSN` as GitHub secrets, then manually verify a
-      Development run before any Production dispatch.
+- [x] Completed — minimal recovery is verified for Development: Supabase CLI
+      `3.3.0`, explicit `--remote=<project ref>`/`--yes`, configured Sentry secrets,
+      and Temurin JDK 17 completed migrations, Edge Function deployment, APK build
+      and artifact publication without workflow errors. The generated Development
+      APK was installed and launched successfully on a physical Android device.
+      Manual-only triggers, target selection and execution order remain unchanged.
+- [ ] Pending — verify a Production deployment before treating the same recovery
+      as proven for Production; verify Sentry event delivery and source-map
+      symbolication specifically for the CI-generated APK; complete the full
+      physical-device regression suite.
 - [ ] Deferred — optional hardening: branch guards, concurrency, GitHub
       Environments/Production approval, preflight, dynamic artifact names,
       Android signing/tooling validation, Auth-config deprecations, and explicit
@@ -227,7 +230,7 @@
 
 **Phase 10 — App Reliability & Error Monitoring (Partially completed; see closure criteria above)**
 
-**Next development priority: UI/UX Redesign. It is paused after the completed
-architecture audit on `feature/ui-ux-redesign` (`119d5b5`) and resumes after
-minimal deployment recovery is verified; no UI/UX implementation belongs to the
-MDH branch.**
+**Next development priority: UI/UX Redesign. Its completed architecture audit on
+`feature/ui-ux-redesign` (`119d5b5`) may now resume because minimal Development
+deployment recovery is verified; UI implementation still requires visual-concept
+approval and does not belong to this branch.**
