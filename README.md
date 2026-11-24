@@ -1821,6 +1821,8 @@ APK build as failed.
 
 - Pin Supabase CLI `3.3.0` in both workflows.
 - Use `--remote=<project ref>` and `--yes` for `db push` and Edge Function deploy.
+- Explicitly select Temurin JDK 17 before dependency installation and the Android
+  Gradle build.
 - Preserve the existing Development and Production secret-selected targets and
   the migration → function → APK → artifact order.
 - Write the environment-appropriate runtime Sentry DSN into the generated env
@@ -1847,13 +1849,17 @@ environment configuration; the auth token is private. No Android signing secret
 is defined by this plan: first verify the generated Android release signing
 behavior and agree a signing policy.
 
-### Development workflow acceptance criteria
+### Verified Development recovery
 
-After the owner configures the new secrets and explicitly dispatches Development,
-the run must confirm the intended remote target, complete `db push` and function
-deployment with CLI `3.3.0`, build/upload the Dev APK, and report Sentry upload
-success without exposing private values. Production remains untouched. APK
-installation and runtime behavior remain separate manual verification.
+The updated Development workflow completed successfully: migrations and Edge
+Function deployment ran with Supabase CLI `3.3.0`, the configured Sentry secrets
+were available to the APK build, and Temurin JDK 17 was selected explicitly. The
+generated Development APK was installed and launched successfully on a physical
+Android device.
+
+This does not verify Production, Sentry event delivery or source-map
+symbolication for the CI-generated APK, or the full physical-device regression
+suite. Those checks remain manual and pending.
 
 Deferred decisions: branch guards, concurrency, GitHub Environments/approvals,
 preflight, dynamic artifact names, Android signing/tooling, Auth provider-key
