@@ -59,9 +59,7 @@ export default function ListsScreen() {
             await signOut();
         } catch (error) {
             console.error('Failed to sign out:', error);
-            setSignOutError(
-                'Не удалось выйти из аккаунта. Попробуйте ещё раз.'
-            );
+            setSignOutError('Unable to sign out. Please try again.');
         } finally {
             isSigningOutRef.current = false;
             setIsSigningOut(false);
@@ -82,18 +80,16 @@ export default function ListsScreen() {
 
             {isOffline && !hasListsData && (
                 <Text style={styles.offline}>
-                    Нет подключения к интернету. Подключитесь к сети, чтобы
-                    загрузить списки.
+                    No internet connection. Connect to the internet to load your
+                    lists.
                 </Text>
             )}
 
             {listsError && !isOffline && (
                 <>
-                    <Text style={styles.error}>
-                        Не удалось загрузить списки.
-                    </Text>
+                    <Text style={styles.error}>Unable to load your lists.</Text>
                     <Pressable onPress={() => void refetchLists()}>
-                        <Text style={styles.retry}>Повторить</Text>
+                        <Text style={styles.retry}>Retry</Text>
                     </Pressable>
                 </>
             )}

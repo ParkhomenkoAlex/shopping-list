@@ -102,8 +102,8 @@ box-shadow буквально: Android elevation и iOS shadow имеют раз
 
 - Pressed: native `Pressable` pressed opacity/background; no arbitrary animation
   framework in the first pass.
-- Focus: 2 px primary ring equivalent; preserve visible keyboard focus where the
-  platform supplies it.
+- Focus: use a primary border without changing input geometry; preserve visible
+  keyboard focus where the platform supplies it.
 - Disabled: visual opacity plus real `disabled`/`accessibilityState`; a pending
   mutation blocks only its own entity.
 - Loading/refetch: initial empty-data load uses a bounded indicator; cached data
@@ -114,7 +114,8 @@ box-shadow буквально: Android elevation и iOS shadow имеют раз
 
 ## React Native implementation architecture
 
-First add `src/theme/` only after the corresponding implementation phase:
+R1 implements only the foundation below; other primitives appear only with their
+first consumer:
 
 ```text
 src/theme/
@@ -122,12 +123,15 @@ src/theme/
   semantic.ts      # light semantic aliases; no dark theme commitment yet
   listAppearance.ts# iconKey/colorKey catalog and display mapping
 src/components/ui/
-  Button.tsx, TextField.tsx, Screen.tsx, Sheet.tsx, StatePanel.tsx
+  Button.tsx, TextField.tsx, Screen.tsx, StatePanel.tsx
 ```
 
 Keep screen-specific layout styles local. Tokens and UI primitives must not hold
 Supabase, Router, React Query or mutation logic. Existing feature components keep
 their hook contracts; the redesign changes composition and styles incrementally.
+`Screen` uses the installed `react-native-safe-area-context`; R2 must inspect the
+existing Expo Router safe-area context before deciding whether a root provider is
+needed when the primitive is integrated into navigation.
 
 ## HTML-to-native differences
 

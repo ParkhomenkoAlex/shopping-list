@@ -23,15 +23,15 @@ export class AppErrorBoundary extends Component<Props, State> {
         if (!this.state.hasError) return this.props.children;
         return (
             <View style={styles.container}>
-                <Text style={styles.title}>Что-то пошло не так</Text>
+                <Text style={styles.title}>Something went wrong</Text>
                 <Text style={styles.message}>
-                    Попробуйте открыть экран ещё раз.
+                    Try opening the screen again.
                 </Text>
                 <Pressable
                     style={styles.button}
                     onPress={() => this.setState({ hasError: false })}
                 >
-                    <Text style={styles.buttonText}>Повторить</Text>
+                    <Text style={styles.buttonText}>Retry</Text>
                 </Pressable>
             </View>
         );

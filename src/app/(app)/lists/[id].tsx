@@ -127,8 +127,8 @@ export default function ListDetailsScreen() {
             {isInitialListPaused && (
                 <View style={styles.loadError}>
                     <Text style={styles.offline}>
-                        Нет подключения к интернету. Подключитесь к сети, чтобы
-                        загрузить список.
+                        No internet connection. Connect to the internet to load
+                        this list.
                     </Text>
                 </View>
             )}
@@ -137,8 +137,8 @@ export default function ListDetailsScreen() {
                 <View style={styles.loadError}>
                     <Text style={styles.error}>
                         {isOffline
-                            ? 'Нет подключения к интернету. Подключитесь к сети, чтобы загрузить список.'
-                            : 'Не удалось загрузить список.'}
+                            ? 'No internet connection. Connect to the internet to load this list.'
+                            : 'Unable to load this list.'}
                     </Text>
                     <Pressable
                         style={[
@@ -151,7 +151,7 @@ export default function ListDetailsScreen() {
                         {isListRefetching ? (
                             <ActivityIndicator size="small" color="#208AEF" />
                         ) : (
-                            <Text style={styles.retry}>Повторить</Text>
+                            <Text style={styles.retry}>Retry</Text>
                         )}
                     </Pressable>
                 </View>

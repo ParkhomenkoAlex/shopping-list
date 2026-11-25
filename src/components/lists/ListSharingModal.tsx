@@ -159,15 +159,15 @@ export function ListSharingModal({
 
                         {isInitialMembersPaused && (
                             <Text style={styles.offline}>
-                                Нет подключения к интернету. Подключитесь к
-                                сети, чтобы загрузить участников.
+                                No internet connection. Connect to the internet
+                                to load members.
                             </Text>
                         )}
 
                         {hasInitialMembersError && (
                             <View style={styles.loadError}>
                                 <Text style={styles.error}>
-                                    Не удалось загрузить участников.
+                                    Unable to load members.
                                 </Text>
                                 <Pressable
                                     style={[
@@ -184,9 +184,7 @@ export function ListSharingModal({
                                             color="#208AEF"
                                         />
                                     ) : (
-                                        <Text style={styles.retry}>
-                                            Повторить
-                                        </Text>
+                                        <Text style={styles.retry}>Retry</Text>
                                     )}
                                 </Pressable>
                             </View>
@@ -247,8 +245,8 @@ export function ListSharingModal({
                                                         }}
                                                         accessibilityLabel={
                                                             isRemoving
-                                                                ? 'Удаление участника'
-                                                                : `Удалить ${member.email}`
+                                                                ? 'Removing member'
+                                                                : `Remove ${member.email}`
                                                         }
                                                         hitSlop={8}
                                                     >
@@ -271,7 +269,7 @@ export function ListSharingModal({
 
                         {removeMemberError && (
                             <Text style={styles.error}>
-                                Не удалось удалить участника.
+                                Unable to remove member.
                             </Text>
                         )}
 
@@ -326,7 +324,7 @@ export function ListSharingModal({
 
                                 {addMemberError && (
                                     <Text style={styles.error}>
-                                        Не удалось добавить участника.
+                                        Unable to add member.
                                     </Text>
                                 )}
 

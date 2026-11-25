@@ -2,7 +2,7 @@
 
 ## Current status
 
-- **Active next work:** UI/UX Redesign, R1 pending approval.
+- **Active work:** UI/UX Redesign, R2 Navigation & Layout.
 - **Visual baseline:** Soft Indigo v0.2
   [`docs/design/prototype.html`](docs/design/prototype.html).
 - **Design rules:** [`docs/design/DESIGN_SYSTEM.md`](docs/design/DESIGN_SYSTEM.md).
@@ -11,6 +11,10 @@
 
 Visual review: prototype → React Native implementation → emulator screenshots →
 comparison → corrections → owner approval → commit.
+
+Each intermediate redesign phase requires quality checks and relevant emulator
+verification after it is integrated into a screen. Release APK verification is
+required for release-sensitive changes and the final regression, not every UI commit.
 
 ## UI/UX Redesign
 
@@ -26,6 +30,9 @@ comparison → corrections → owner approval → commit.
   avatar is the first email letter; no profiles or uploaded avatars are added.
 - Light theme is the baseline. Dark theme, haptics and extra animation need later
   approval. Add no dependency without technical justification.
+- English is the only application interface language. UI strings, accessibility labels,
+  application-generated messages, source identifiers and comments are English;
+  user-generated content may use any language.
 
 ### Non-regression contract
 
@@ -37,11 +44,14 @@ push notifications and Sentry.
 ### R0–R9
 
 - [x] **R0 Planning:** audit, approved baseline, decisions and design system.
-- [ ] **R1 Tokens/foundations:** `src/theme/{tokens,semantic,listAppearance}.ts`
-      and only presentational `Button`, `TextField`, `Screen`, `StatePanel` when first
-      consumed. No screen, Router, hook, service, schema or dependency change. Verify
-      token parity, quality checks, accessibility props and first screenshot.
-- [ ] **R2 Navigation shell:** one visible header owner per route and safe areas.
+- [x] **R1 Tokens/foundations:**
+      `src/theme/{tokens,semantic,listAppearance}.ts` and presentational `Button`,
+      `TextField`, `Screen`, `StatePanel`. No screen, Router, hook, service, schema or
+      dependency change. Token parity, quality checks and accessibility props are
+      verified. Visual and accessibility emulator verification occurs during each
+      primitive's first screen integration.
+- [ ] **R2 Navigation & Layout — active:** one visible header owner per route and
+      safe areas.
       Verify Back, cold start, `/lists/[id]` and notification navigation.
 - [ ] **R3 Authentication:** approved tabs/illustration; retain auth, build label,
       pending/error and keyboard behavior.
@@ -89,6 +99,8 @@ do not override the approved prototype.
   reporting and received-event privacy audit.
 - Production deployment, CI-generated APK Sentry delivery/source maps, and manual
   CI/ruleset execution on `master`.
+- Deploy the English fallback sender name for `notify-list-members` through the
+  existing manual deployment workflow, then verify the resulting push content.
 
 ### Deferred
 

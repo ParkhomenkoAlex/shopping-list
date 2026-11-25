@@ -193,7 +193,7 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const senderIdentifier = user.email || 'Участник';
+        const senderIdentifier = user.email || 'Member';
         const notificationTitle = 'Shopping List';
         const notificationBody = `${senderIdentifier} updated list «${list.name}»`;
 

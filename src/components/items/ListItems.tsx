@@ -238,15 +238,15 @@ export function ListItems({
 
             {isInitialLoadPaused && (
                 <Text style={styles.offline}>
-                    Нет подключения к интернету. Подключитесь к сети, чтобы
-                    загрузить элементы списка.
+                    No internet connection. Connect to the internet to load the
+                    items in this list.
                 </Text>
             )}
 
             {hasInitialLoadError && (
                 <View>
                     <Text style={styles.error}>
-                        Не удалось загрузить элементы списка.
+                        Unable to load the items in this list.
                     </Text>
                     <Pressable
                         style={[
@@ -259,7 +259,7 @@ export function ListItems({
                         {isListItemsRefetching ? (
                             <ActivityIndicator size="small" color="#208AEF" />
                         ) : (
-                            <Text style={styles.retry}>Повторить</Text>
+                            <Text style={styles.retry}>Retry</Text>
                         )}
                     </Pressable>
                 </View>
