@@ -2,10 +2,21 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { router, useRootNavigationState } from 'expo-router';
+import { router, usePathname, useRootNavigationState } from 'expo-router';
 
 import { useAuth } from '@/providers/AuthProvider';
 import { registerPushToken } from '@/services/PushNotificationService';
+
+type NotificationTarget = {
+    listId: string;
+    responseId: string;
+    source: 'initial' | 'live';
+    userId: string;
+};
+
+function isAuthenticatedIndexRoute(pathname: string) {
+    return pathname === '/' || pathname === '/(app)';
+}
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -20,13 +31,61 @@ Notifications.setNotificationHandler({
 export function PushNotificationRegistration() {
     const { user } = useAuth();
     const userId = user?.id;
+    const pathname = usePathname();
     const rootNavigationState = useRootNavigationState();
     const registeredTokenRef = useRef<string | null>(null);
     const handledResponseIdRef = useRef<string | null>(null);
+    const pendingInitialTargetRef = useRef<NotificationTarget | null>(null);
+    const pathnameRef = useRef(pathname);
+
+    useEffect(() => {
+        pathnameRef.current = pathname;
+    }, [pathname]);
+
+    const clearHandledNotificationResponse = useCallback(() => {
+        void Notifications.clearLastNotificationResponseAsync().catch(
+            (error) => {
+                console.error(
+                    'Failed to clear handled notification response:',
+                    error
+                );
+            }
+        );
+    }, []);
+
+    const dispatchNotificationRoute = useCallback(
+        (target: NotificationTarget) => {
+            router.push(`/lists/${target.listId}`);
+
+            clearHandledNotificationResponse();
+        },
+        [clearHandledNotificationResponse]
+    );
+
+    const discardPendingTarget = useCallback(
+        (target: NotificationTarget) => {
+            if (
+                pendingInitialTargetRef.current?.responseId ===
+                target.responseId
+            ) {
+                pendingInitialTargetRef.current = null;
+            }
+
+            clearHandledNotificationResponse();
+        },
+        [clearHandledNotificationResponse]
+    );
 
     const handleNotificationResponse = useCallback(
-        (response: Notifications.NotificationResponse | null) => {
+        (
+            response: Notifications.NotificationResponse | null,
+            source: 'initial' | 'live'
+        ) => {
             if (!response) {
+                return;
+            }
+
+            if (!userId) {
                 return;
             }
 
@@ -44,18 +103,32 @@ export function PushNotificationRegistration() {
             }
 
             handledResponseIdRef.current = responseId;
-            router.push(`/lists/${listId}`);
+            const target = { listId, responseId, source, userId };
+            const currentPathname = pathnameRef.current;
 
-            void Notifications.clearLastNotificationResponseAsync().catch(
-                (error) => {
-                    console.error(
-                        'Failed to clear handled notification response:',
-                        error
-                    );
-                }
-            );
+            if (source === 'initial' && currentPathname.startsWith('/lists/')) {
+                discardPendingTarget(target);
+                return;
+            }
+
+            if (
+                currentPathname === '/lists' ||
+                (source === 'live' &&
+                    !isAuthenticatedIndexRoute(currentPathname))
+            ) {
+                pendingInitialTargetRef.current = null;
+                dispatchNotificationRoute(target);
+                return;
+            }
+
+            if (isAuthenticatedIndexRoute(currentPathname)) {
+                pendingInitialTargetRef.current = target;
+                return;
+            }
+
+            discardPendingTarget(target);
         },
-        []
+        [discardPendingTarget, dispatchNotificationRoute, userId]
     );
 
     useEffect(() => {
@@ -70,16 +143,65 @@ export function PushNotificationRegistration() {
     }, []);
 
     useEffect(() => {
+        const pendingInitialTarget = pendingInitialTargetRef.current;
+
+        if (!pendingInitialTarget) {
+            return;
+        }
+
+        if (!userId || !rootNavigationState.key) {
+            discardPendingTarget(pendingInitialTarget);
+            return;
+        }
+
+        if (pendingInitialTarget.userId !== userId) {
+            discardPendingTarget(pendingInitialTarget);
+            return;
+        }
+
+        if (pathname === '/lists') {
+            pendingInitialTargetRef.current = null;
+            dispatchNotificationRoute(pendingInitialTarget);
+            return;
+        }
+
+        if (pathname.startsWith('/lists/')) {
+            if (pendingInitialTarget.source === 'initial') {
+                discardPendingTarget(pendingInitialTarget);
+                return;
+            }
+
+            pendingInitialTargetRef.current = null;
+            dispatchNotificationRoute(pendingInitialTarget);
+            return;
+        }
+
+        if (!isAuthenticatedIndexRoute(pathname)) {
+            discardPendingTarget(pendingInitialTarget);
+            return;
+        }
+    }, [
+        discardPendingTarget,
+        dispatchNotificationRoute,
+        pathname,
+        rootNavigationState.key,
+        userId,
+    ]);
+
+    useEffect(() => {
         if (!userId || !rootNavigationState.key) {
             return;
         }
 
         const responseSubscription =
-            Notifications.addNotificationResponseReceivedListener(
-                handleNotificationResponse
+            Notifications.addNotificationResponseReceivedListener((response) =>
+                handleNotificationResponse(response, 'live')
             );
 
-        handleNotificationResponse(Notifications.getLastNotificationResponse());
+        handleNotificationResponse(
+            Notifications.getLastNotificationResponse(),
+            'initial'
+        );
 
         return () => {
             responseSubscription.remove();
