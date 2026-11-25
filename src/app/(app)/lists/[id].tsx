@@ -1,9 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    BackHandler,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -17,6 +18,7 @@ import { EditListModal } from '@/components/lists/EditListModal';
 import { ListActionsModal } from '@/components/lists/ListActionsModal';
 import { ListHeader, type MenuAnchor } from '@/components/lists/ListHeader';
 import { ListSharingModal } from '@/components/lists/ListSharingModal';
+import { Screen } from '@/components/ui/Screen';
 import { useListDetails } from '@/hooks/useListDetails';
 import { useListMembership } from '@/hooks/useListMembership';
 import { useAuth } from '@/providers/AuthProvider';
@@ -59,6 +61,33 @@ export default function ListDetailsScreen() {
     const isInitialListLoading = isListLoading && !hasListData && !isListPaused;
     const isInitialListPaused = isListPaused && !hasListData;
     const hasInitialListError = Boolean(listError) && !hasListData;
+
+    const handleBack = useCallback(() => {
+        if (router.canGoBack()) {
+            router.back();
+            return;
+        }
+
+        router.replace('/lists');
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            const subscription = BackHandler.addEventListener(
+                'hardwareBackPress',
+                () => {
+                    if (router.canGoBack()) {
+                        return false;
+                    }
+
+                    handleBack();
+                    return true;
+                }
+            );
+
+            return () => subscription.remove();
+        }, [handleBack])
+    );
 
     const handleOpenActions = (anchor: MenuAnchor) => {
         setMenuAnchor(anchor);
@@ -117,7 +146,11 @@ export default function ListDetailsScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <Screen
+            padded={false}
+            edges={['top', 'bottom']}
+            style={styles.container}
+        >
             {isInitialListLoading && (
                 <View style={styles.loading}>
                     <ActivityIndicator />
@@ -163,7 +196,11 @@ export default function ListDetailsScreen() {
 
             {list && (
                 <>
-                    <ListHeader list={list} onMenuPress={handleOpenActions} />
+                    <ListHeader
+                        list={list}
+                        onBack={handleBack}
+                        onMenuPress={handleOpenActions}
+                    />
 
                     <ScrollView
                         style={styles.scrollView}
@@ -222,7 +259,7 @@ export default function ListDetailsScreen() {
                     <ActivityIndicator size="large" />
                 </View>
             )}
-        </View>
+        </Screen>
     );
 }
 

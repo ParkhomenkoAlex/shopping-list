@@ -3,7 +3,6 @@ import { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
-    ScrollView,
     StyleSheet,
     Text,
     View,
@@ -13,6 +12,7 @@ import { useNetInfo } from '@react-native-community/netinfo';
 import { BuildVersionLabel } from '@/components/BuildVersionLabel';
 import { CreateList } from '@/components/lists/CreateList';
 import { ListCard } from '@/components/lists/ListCard';
+import { Screen } from '@/components/ui/Screen';
 import { useList } from '@/hooks/useList';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -67,8 +67,15 @@ export default function ListsScreen() {
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>My Lists</Text>
+        <Screen
+            scrollable
+            padded={false}
+            edges={['top', 'bottom']}
+            contentContainerStyle={styles.container}
+        >
+            <Text accessibilityRole="header" style={styles.title}>
+                My Lists
+            </Text>
             <View style={styles.metadata}>
                 <BuildVersionLabel style={styles.buildVersion} />
                 {user?.email && (
@@ -135,7 +142,7 @@ export default function ListsScreen() {
                     {isSigningOut ? 'Logging out...' : 'Log out'}
                 </Text>
             </Pressable>
-        </ScrollView>
+        </Screen>
     );
 }
 

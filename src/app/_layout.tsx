@@ -1,7 +1,7 @@
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, StatusBar } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { queryClient } from '@/lib/QueryClient';
@@ -10,6 +10,7 @@ import { AppErrorBoundary } from '@/components/reliability/AppErrorBoundary';
 import { OfflineBanner } from '@/components/reliability/OfflineBanner';
 import { StartupScreen } from '@/components/reliability/StartupScreen';
 import { addMonitoringBreadcrumb } from '@/lib/Monitoring';
+import { semanticColors } from '@/theme/semantic';
 
 function AppLifecycle() {
     useEffect(() => {
@@ -54,17 +55,25 @@ function RootNavigator() {
             <PushNotificationRegistration />
             <OfflineBanner />
 
-            <Stack>
+            <Stack
+                screenOptions={{
+                    contentStyle: {
+                        backgroundColor: semanticColors.screen.background,
+                    },
+                    headerShown: false,
+                }}
+            >
                 <Stack.Protected guard={Boolean(session)}>
-                    <Stack.Screen name="(app)" />
+                    <Stack.Screen
+                        name="(app)"
+                        options={{ headerShown: false }}
+                    />
                 </Stack.Protected>
 
                 <Stack.Protected guard={!session}>
                     <Stack.Screen
                         name="auth"
-                        options={{
-                            headerShown: false,
-                        }}
+                        options={{ headerShown: false }}
                     />
                 </Stack.Protected>
             </Stack>
@@ -75,6 +84,10 @@ function RootNavigator() {
 export default function RootLayout() {
     return (
         <AppErrorBoundary>
+            <StatusBar
+                backgroundColor={semanticColors.screen.background}
+                barStyle="dark-content"
+            />
             <QueryClientProvider client={queryClient}>
                 <AuthProvider>
                     <AppLifecycle />

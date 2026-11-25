@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/providers/AuthProvider';
 import { BuildVersionLabel } from '@/components/BuildVersionLabel';
+import { Screen } from '@/components/ui/Screen';
 
 export default function AuthScreen() {
     const { signIn, signUp, isLoading } = useAuth();
@@ -45,64 +46,66 @@ export default function AuthScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>
-                {isRegistering ? 'Create account' : 'Sign in'}
-            </Text>
-
-            <BuildVersionLabel style={styles.buildVersion} />
-
-            <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Email"
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!isSubmitting && !isLoading}
-            />
-
-            <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Password"
-                secureTextEntry
-                editable={!isSubmitting && !isLoading}
-            />
-
-            {error && <Text style={styles.error}>{error}</Text>}
-
-            <Pressable
-                style={[
-                    styles.submitButton,
-                    (isSubmitting || isLoading) && styles.disabledButton,
-                ]}
-                onPress={handleSubmit}
-                disabled={isSubmitting || isLoading}
-            >
-                <Text style={styles.submitButtonText}>
-                    {isSubmitting
-                        ? 'Please wait...'
-                        : isRegistering
-                          ? 'Register'
-                          : 'Sign in'}
+        <Screen edges={['top', 'bottom']} padded={false}>
+            <View style={styles.container}>
+                <Text accessibilityRole="header" style={styles.title}>
+                    {isRegistering ? 'Create account' : 'Sign in'}
                 </Text>
-            </Pressable>
 
-            <Pressable
-                style={styles.switchButton}
-                onPress={handleToggleMode}
-                disabled={isSubmitting || isLoading}
-            >
-                <Text style={styles.switchButtonText}>
-                    {isRegistering
-                        ? 'Already have an account? Sign in'
-                        : 'Need an account? Register'}
-                </Text>
-            </Pressable>
-        </View>
+                <BuildVersionLabel style={styles.buildVersion} />
+
+                <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Email"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    editable={!isSubmitting && !isLoading}
+                />
+
+                <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Password"
+                    secureTextEntry
+                    editable={!isSubmitting && !isLoading}
+                />
+
+                {error && <Text style={styles.error}>{error}</Text>}
+
+                <Pressable
+                    style={[
+                        styles.submitButton,
+                        (isSubmitting || isLoading) && styles.disabledButton,
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={isSubmitting || isLoading}
+                >
+                    <Text style={styles.submitButtonText}>
+                        {isSubmitting
+                            ? 'Please wait...'
+                            : isRegistering
+                              ? 'Register'
+                              : 'Sign in'}
+                    </Text>
+                </Pressable>
+
+                <Pressable
+                    style={styles.switchButton}
+                    onPress={handleToggleMode}
+                    disabled={isSubmitting || isLoading}
+                >
+                    <Text style={styles.switchButtonText}>
+                        {isRegistering
+                            ? 'Already have an account? Sign in'
+                            : 'Need an account? Register'}
+                    </Text>
+                </Pressable>
+            </View>
+        </Screen>
     );
 }
 

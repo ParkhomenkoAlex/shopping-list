@@ -2,7 +2,8 @@
 
 ## Current status
 
-- **Active work:** UI/UX Redesign, R2 Navigation & Layout.
+- **Active work:** UI/UX Redesign — intermediate integration and Development
+  validation checkpoint before R3.
 - **Visual baseline:** Soft Indigo v0.2
   [`docs/design/prototype.html`](docs/design/prototype.html).
 - **Design rules:** [`docs/design/DESIGN_SYSTEM.md`](docs/design/DESIGN_SYSTEM.md).
@@ -50,9 +51,16 @@ push notifications and Sentry.
       dependency change. Token parity, quality checks and accessibility props are
       verified. Visual and accessibility emulator verification occurs during each
       primitive's first screen integration.
-- [ ] **R2 Navigation & Layout — active:** one visible header owner per route and
-      safe areas.
-      Verify Back, cold start, `/lists/[id]` and notification navigation.
+- [x] **R2 Navigation & Layout — accepted:** root and protected Stacks suppress
+      generated headers; Auth and My Lists own their titles, while List Details owns Back
+      and list actions through `ListHeader`. `Screen` applies explicit top/bottom
+      safe-area edges without adding a second provider. History-less cold deep links to
+      `/lists/[id]` replace to `/lists` on custom or Android Back; ordinary navigation
+      preserves Router Back history. Pixel 8 Local verification passed for auth/session
+      recovery, CRUD, offline/reconnect, headers/safe areas/StatusBar/FAB, ordinary
+      navigation, duplicate-navigation protection, and warm/cold List Details deep links
+      including both Back paths. Runtime accessibility remains pending; notification
+      navigation and physical-device regression remain pending.
 - [ ] **R3 Authentication:** approved tabs/illustration; retain auth, build label,
       pending/error and keyboard behavior.
 - [ ] **R4 My Lists:** cards, search and account/logout menu. Do not show real
@@ -93,8 +101,9 @@ do not override the approved prototype.
 
 - Auth failure/Retry, long background, unstable network, Supabase unavailable,
   expired/revoked session and app update with persisted session.
-- Deep links/notification taps, rapid taps on different cards, concurrent item or
-  member operations and pending cleanup after mutation failure.
+- Notification taps, rapid taps on different cards, concurrent item or member
+  operations and pending cleanup after mutation failure. List Details warm/cold
+  deep-link navigation and both Back paths are verified on Pixel 8 Local.
 - Android phones, Production APK, Production Sentry/source maps, native crash
   reporting and received-event privacy audit.
 - Production deployment, CI-generated APK Sentry delivery/source maps, and manual

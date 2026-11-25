@@ -129,9 +129,9 @@ src/components/ui/
 Keep screen-specific layout styles local. Tokens and UI primitives must not hold
 Supabase, Router, React Query or mutation logic. Existing feature components keep
 their hook contracts; the redesign changes composition and styles incrementally.
-`Screen` uses the installed `react-native-safe-area-context`; R2 must inspect the
-existing Expo Router safe-area context before deciding whether a root provider is
-needed when the primitive is integrated into navigation.
+`Screen` uses the installed `react-native-safe-area-context`. R2 confirmed that
+Expo Router already supplies the root safe-area provider, so no app-owned provider
+is added. Integrating routes use explicit edges to avoid duplicate insets.
 
 ## HTML-to-native differences
 
