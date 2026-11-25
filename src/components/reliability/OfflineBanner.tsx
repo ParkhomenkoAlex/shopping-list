@@ -7,7 +7,7 @@ export function OfflineBanner() {
         return null;
     return (
         <View style={styles.banner}>
-            <Text style={styles.text}>Нет подключения к интернету</Text>
+            <Text style={styles.text}>No internet connection</Text>
         </View>
     );
 }

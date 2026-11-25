@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
 import { useRef } from 'react';
 import {
     Pressable,
@@ -10,6 +9,8 @@ import {
 } from 'react-native';
 
 import type { List } from '@/types/List';
+import { iconSizes, spacing, typography } from '@/theme/tokens';
+import { semanticColors } from '@/theme/semantic';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 
 export type MenuAnchor = {
@@ -21,10 +22,11 @@ export type MenuAnchor = {
 
 type ListHeaderProps = {
     list: List;
+    onBack: () => void;
     onMenuPress: (anchor: MenuAnchor) => void;
 };
 
-export function ListHeader({ list, onMenuPress }: ListHeaderProps) {
+export function ListHeader({ list, onBack, onMenuPress }: ListHeaderProps) {
     const menuButtonRef = useRef<ViewType>(null);
 
     const handleMenuPress = () => {
@@ -43,10 +45,16 @@ export function ListHeader({ list, onMenuPress }: ListHeaderProps) {
             <View style={styles.navigation}>
                 <Pressable
                     style={styles.iconButton}
-                    onPress={() => router.back()}
+                    onPress={onBack}
                     hitSlop={12}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
                 >
-                    <Ionicons name="chevron-back" size={26} color="#111111" />
+                    <Ionicons
+                        name="chevron-back"
+                        size={iconSizes.list}
+                        color={semanticColors.content.primary}
+                    />
                 </Pressable>
 
                 <Pressable
@@ -54,18 +62,22 @@ export function ListHeader({ list, onMenuPress }: ListHeaderProps) {
                     style={styles.iconButton}
                     onPress={handleMenuPress}
                     hitSlop={12}
+                    accessibilityLabel="List actions"
+                    accessibilityRole="button"
                 >
                     <Ionicons
                         name="ellipsis-horizontal"
-                        size={24}
-                        color="#111111"
+                        size={iconSizes.list}
+                        color={semanticColors.content.primary}
                     />
                 </Pressable>
             </View>
 
             <View style={styles.listInfo}>
                 <View style={styles.titleRow}>
-                    <Text style={styles.listName}>{list.name}</Text>
+                    <Text accessibilityRole="header" style={styles.listName}>
+                        {list.name}
+                    </Text>
 
                     <Text style={styles.updatedAt}>
                         ({formatRelativeTime(list.updated_at)})
@@ -82,7 +94,7 @@ export function ListHeader({ list, onMenuPress }: ListHeaderProps) {
 
 const styles = StyleSheet.create({
     container: {
-        gap: 16,
+        gap: spacing.md,
     },
 
     navigation: {
@@ -99,31 +111,28 @@ const styles = StyleSheet.create({
     },
 
     listInfo: {
-        gap: 6,
+        gap: spacing.xs,
     },
 
     titleRow: {
         flexDirection: 'row',
         alignItems: 'baseline',
         flexWrap: 'wrap',
-        gap: 6,
+        gap: spacing.xs,
     },
 
     listName: {
-        fontSize: 30,
-        fontWeight: '700',
-        color: '#111111',
+        ...typography.screenTitle,
+        color: semanticColors.content.primary,
     },
 
     updatedAt: {
-        fontSize: 12,
-        fontWeight: '400',
-        color: '#999999',
+        ...typography.caption,
+        color: semanticColors.content.muted,
     },
 
     description: {
-        fontSize: 16,
-        lineHeight: 22,
-        color: '#555555',
+        ...typography.body,
+        color: semanticColors.content.secondary,
     },
 });

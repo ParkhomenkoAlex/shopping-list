@@ -27,9 +27,7 @@ export function ListItem({
     onDelete,
 }: ListItemProps) {
     const isDisabled = isUpdating || isDeleting;
-    const pendingLabel = isDeleting
-        ? 'Удаление элемента списка'
-        : 'Сохранение элемента списка';
+    const pendingLabel = isDeleting ? 'Deleting list item' : 'Saving list item';
 
     return (
         <View

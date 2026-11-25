@@ -16,20 +16,18 @@ export function StartupScreen({ error = false, onRetry }: StartupScreenProps) {
         <View style={styles.container} accessibilityRole="progressbar">
             {error ? (
                 <>
-                    <Text style={styles.title}>
-                        Не удалось запустить приложение
-                    </Text>
+                    <Text style={styles.title}>Unable to start the app</Text>
                     <Text style={styles.message}>
-                        Проверьте подключение к интернету и попробуйте ещё раз.
+                        Check your internet connection and try again.
                     </Text>
                     <Pressable style={styles.button} onPress={onRetry}>
-                        <Text style={styles.buttonText}>Повторить</Text>
+                        <Text style={styles.buttonText}>Retry</Text>
                     </Pressable>
                 </>
             ) : (
                 <>
                     <ActivityIndicator size="large" color="#208AEF" />
-                    <Text style={styles.message}>Приложение запускается…</Text>
+                    <Text style={styles.message}>Starting app…</Text>
                 </>
             )}
         </View>

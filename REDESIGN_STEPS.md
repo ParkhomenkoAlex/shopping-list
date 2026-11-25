@@ -1,236 +1,128 @@
-# Shopping List — UI/UX Roadmap
+# Shopping List — Roadmap
 
-## План работы
+## Current status
 
-### 1. Основной экран List
+- **Active work:** UI/UX Redesign — intermediate integration and Development
+  validation checkpoint before R3.
+- **Visual baseline:** Soft Indigo v0.2
+  [`docs/design/prototype.html`](docs/design/prototype.html).
+- **Design rules:** [`docs/design/DESIGN_SYSTEM.md`](docs/design/DESIGN_SYSTEM.md).
+- **Reliability:** Phase 10 is implemented in source and partially verified;
+  Production and physical-device evidence remains pending.
 
-- [x] Header
-- [x] Название списка
-- [x] `Last updated`
-- [x] Секция `Active`
-- [x] Секция `Finished`
-- [x] Кнопка `+`
+Visual review: prototype → React Native implementation → emulator screenshots →
+comparison → corrections → owner approval → commit.
 
-### 2. Active / Finished
+Each intermediate redesign phase requires quality checks and relevant emulator
+verification after it is integrated into a screen. Release APK verification is
+required for release-sensitive changes and the final regression, not every UI commit.
 
-- [x] Разделить активные и завершённые items.
-- [x] Завершённый item визуально приглушается.
-- [x] После завершения item перемещается в `Finished`.
-- [x] Restore возвращает item в `Active`.
+## UI/UX Redesign
 
-### 3. Анимация завершения
+### Approved decisions
 
-- [ ] Нажатие на checkbox.
-- [ ] Мягкий визуальный feedback.
-- [ ] Item плавно перемещается в `Finished`.
-- [ ] При Restore — обратно в `Active`.
-- [ ] Анимации короткие и ненавязчивые.
+- Use the Design System's predefined Ionicons catalog and eight semantic colors.
+  Persist shared `icon_key`/`color_key` list metadata; legacy lists default to
+  `groceries`/`indigo` and authorized members synchronize the appearance.
+- Counters/progress use one aggregate backend query; N+1 item reads are
+  prohibited. R7 investigates an RLS-compatible RPC or view.
+- Search filters already loaded authorized lists. Completed collapse is local.
+- Auth uses a bundled grocery-illustration asset matching the prototype. Account
+  avatar is the first email letter; no profiles or uploaded avatars are added.
+- Light theme is the baseline. Dark theme, haptics and extra animation need later
+  approval. Add no dependency without technical justification.
+- English is the only application interface language. UI strings, accessibility labels,
+  application-generated messages, source identifiers and comments are English;
+  user-generated content may use any language.
 
-### 4. Swipe Actions
+### Non-regression contract
 
-- [ ] `Active` → Complete / Delete.
-- [ ] `Finished` → Restore / Delete.
-- [ ] Одновременно открыт только один item.
-- [ ] После действия swipe закрывается.
-- [ ] В обычном состоянии item выглядит чисто, без лишних кнопок.
+Preserve auth/session recovery, protected routes and `/lists` cold start, deep
+links/notification navigation, Supabase RLS, React Query/realtime/invalidation,
+offline/retry/cached-data states, per-entity mutation guards, duplicate navigation,
+push notifications and Sentry.
 
-### 5. Add Item
+### R0–R9
 
-- [x] Кнопка `+`.
-- [x] Удобный input.
-- [ ] Автоматический focus.
-- [ ] Keyboard-friendly поведение.
-- [x] Submit / Cancel.
-- [x] Новый item появляется в `Active`.
+- [x] **R0 Planning:** audit, approved baseline, decisions and design system.
+- [x] **R1 Tokens/foundations:**
+      `src/theme/{tokens,semantic,listAppearance}.ts` and presentational `Button`,
+      `TextField`, `Screen`, `StatePanel`. No screen, Router, hook, service, schema or
+      dependency change. Token parity, quality checks and accessibility props are
+      verified. Visual and accessibility emulator verification occurs during each
+      primitive's first screen integration.
+- [x] **R2 Navigation & Layout — accepted:** root and protected Stacks suppress
+      generated headers; Auth and My Lists own their titles, while List Details owns Back
+      and list actions through `ListHeader`. `Screen` applies explicit top/bottom
+      safe-area edges without adding a second provider. History-less cold deep links to
+      `/lists/[id]` replace to `/lists` on custom or Android Back; ordinary navigation
+      preserves Router Back history. Pixel 8 Local verification passed for auth/session
+      recovery, CRUD, offline/reconnect, headers/safe areas/StatusBar/FAB, ordinary
+      navigation, duplicate-navigation protection, and warm/cold List Details deep links
+      including both Back paths. Runtime accessibility remains pending; notification
+      navigation and physical-device regression remain pending.
+- [ ] **R3 Authentication:** approved tabs/illustration; retain auth, build label,
+      pending/error and keyboard behavior.
+- [ ] **R4 My Lists:** cards, search and account/logout menu. Do not show real
+      counters/progress before R7. Verify loading/offline/error/empty states and
+      duplicate-navigation guard.
+- [ ] **R5 List Details/items:** compact rows, quick-create UI, list actions and
+      local completed collapse; retain CRUD, Retry and granular pending behavior.
+- [ ] **R6 Sheets/sharing:** consistent create/edit/delete/action/sharing UI;
+      preserve ownership, add/remove guards, Retry and notify.
+- [ ] **R7 Appearance/statistics data:** separate approval required. Migrate and
+      backfill semantic keys with `CHECK`s, regenerate types, implement one authorized
+      aggregate RPC/view and picker persistence. Verify defaults, SQL/RLS isolation,
+      no N+1, realtime sync, mutation/cache invalidation, reconnect, offline states,
+      Dev deployment and list CRUD. Split data/API and UI commits.
+- [ ] **R8 State polish:** consistent loading/empty/error/offline/disabled UI and
+      localization review without changing reliability semantics.
+- [ ] **R9 Final review:** screenshot comparison plus applicable auth, route,
+      notification, realtime, offline and Sentry regression checks.
 
-### 6. List Actions
+Design references: Apple Reminders, AnyList, Bring! and Todoist inform work but
+do not override the approved prototype.
 
-В меню `⋯`:
+## Reliability and deployment
 
-- [x] Edit list.
-- [x] Sharing.
-- [x] Delete list.
+### Implemented; preserve during redesign
 
-Действия над item остаются через swipe, действия над самим List — через `⋯`.
+- Startup recovery, timeout/Retry and stored-session race guards.
+- Authenticated offline cold start to `/lists`; reconnect recovery and honest
+  no-cache offline states.
+- List/detail/item/sharing loading, Retry, error, cached-data and granular
+  pending states; same-card duplicate navigation guard.
+- Sentry runtime integration/privacy defaults/Dev symbolication; temporary test UI
+  removed.
+- Quality CI and Ruleset; verified Development manual deployment with Supabase CLI
+  3.3.0 and Temurin JDK 17.
 
-### 7. Members / Sharing
+### Pending verification
 
-- [x] Открывается через `⋯ → Sharing`.
-- [x] Список участников.
-- [ ] Имя / email / role.
-- [x] Добавление участника.
-- [x] Используем уже готовый backend.
-- [x] Invitations и transfer ownership пока не делаем.
+- Auth failure/Retry, long background, unstable network, Supabase unavailable,
+  expired/revoked session and app update with persisted session.
+- Notification taps, rapid taps on different cards, concurrent item or member
+  operations and pending cleanup after mutation failure. List Details warm/cold
+  deep-link navigation and both Back paths are verified on Pixel 8 Local.
+- Android phones, Production APK, Production Sentry/source maps, native crash
+  reporting and received-event privacy audit.
+- Production deployment, CI-generated APK Sentry delivery/source maps, and manual
+  CI/ruleset execution on `master`.
+- Deploy the English fallback sender name for `notify-list-members` through the
+  existing manual deployment workflow, then verify the resulting push content.
 
-### 8. Empty / Loading / Error
+### Deferred
 
-- [ ] Empty list.
-- [x] Нет активных items.
-- [x] Есть только Finished items.
-- [-] Loading state — частично реализован; primary Dev emulator regression
-  предварительно пройден, но полный matrix и физические устройства остаются
-  pending. Детальный план и evidence: [`docs/LOADING_INDICATORS_PLAN.md`](docs/LOADING_INDICATORS_PLAN.md).
-- [-] Error state + Retry — реализованы для основных list/item/sharing flows;
-  preliminary Dev emulator verification пройдена, но исчерпывающие failure,
-  deep-link/notification и physical-device проверки остаются pending.
+- Persistent React Query cache/offline-first data.
+- Offline mutations: reject clearly or intentionally queue/synchronize; no
+  implicit queue.
+- Deployment hardening (guards, concurrency, environments, preflight, signing,
+  dynamic artifacts and partial-recovery automation).
+- Automated component/provider tests, isolated Supabase pgTAP CI, Expo Doctor and
+  Edge Function Deno validation.
 
-### 9. Финальный UI Polish
+## Completion rule
 
-- [ ] Spacing.
-- [ ] Typography.
-- [ ] Цвета.
-- [ ] Subtle backgrounds.
-- [ ] Border radius.
-- [ ] Pressed states.
-- [ ] Animation timing.
-- [ ] Swipe feel.
-- [ ] Размеры иконок.
-- [ ] Safe areas.
-- [ ] Keyboard behavior.
-- [ ] Проверка Android / iOS.
-- [ ] Привести все модалки к единому визуальному стилю и исправить их UI/UX.
-
-### Next priority — UI/UX Redesign
-
-- [-] Partially completed — initial CI verification and the UI/UX architecture
-  audit on `feature/ui-ux-redesign` (`119d5b5`) are complete; the manual
-  Development deployment-recovery gate is also complete. Before UI changes,
-  capture screenshots, analyze references, and approve the visual concept.
-- [ ] Pending — проверить root cause технических Expo Router headers (`(app)`,
-      `lists/[id]`), nested headers и duplicate Back buttons; не считать причину
-      подтверждённой до аудита navigation tree.
-- [ ] Pending — Modern Premium Minimalism — только предварительное направление:
-      forest/sage green accents, warm neutral backgrounds, clean typography,
-      rounded surfaces и restrained effects; это не утверждённый final design.
-- [ ] Pending — references: Apple Reminders (typography/minimal navigation/
-      checklist), AnyList (grocery organization/collaboration), Bring! (shopping
-      engagement/product presentation), Todoist (hierarchy/interactions/polish).
-- [ ] Pending — future scope: navigation/headers, theme tokens/shared design
-      system, My Lists, List Details, List Items, Create/Add Item, Sharing Modal,
-      auth, loading/empty/error/offline states, accessibility, light/dark themes,
-      micro-interactions и haptics. Preserve authentication, sharing, realtime,
-      loading/retry/offline behavior и navigation reliability.
-
-## Phase 10 — App Reliability & Error Monitoring
-
-**Цель:** исключить намеренный blank screen при старте и recoverable failures, сохранить валидную локальную Supabase session, честно показывать offline-состояния и подготовить проверяемый production monitoring.
-
-**Статусы:** `[x] Completed` — реализовано и подтверждено доступными проверками; `[-] Partially completed` — реализовано, но покрыта только часть требуемых ручных сценариев; `[ ] Pending` — требует реализации, внешней настройки или фактической проверки.
-
-### 10.1 — Reliable App Startup
-
-- [x] Completed — visible startup loading/recovery screen; explicit `initializing` / `ready` / `error` auth state; timeout, Retry, stale-attempt guards, and persisted-session preservation are implemented.
-- [x] Completed — React Query cache is cleared when the authenticated user changes; TypeScript and ESLint have passed.
-- [-] Partially completed — Dev APK cold-start scenarios are verified, including persisted authentication; startup-error recovery and Retry after a real failure have not been exercised on an APK.
-- [ ] Pending — automated auth-startup tests. The repository has no test runner; none was added solely for this phase.
-
-### 10.2 — Error Handling & Recovery
-
-- [x] Completed — Error Boundary, NetInfo/offline banner, React Query retry/reconnect policy, list loading/error/empty/offline states, and safe list-detail redirect handling are implemented.
-- [x] Completed — `(app)/index → /lists` is explicit; the invalid `initialRouteName="lists"` Release crash was removed; direct list routes remain in source.
-- [-] Partially completed — Pixel 8 Dev Release verification covered online/offline cold starts, retained session, unavailable-data UI, reconnect, and no unexpected Sign In redirect.
-- [ ] Pending — APK verification of timeout/recovery, long background, slow/unstable network, Supabase unavailability, expired/revoked session, deep links, and notification navigation.
-
-**Deferred product questions (not implemented in Phase 10):**
-
-- [ ] Pending / deferred — persistent React Query cache / offline-first data access. The current cache is intentionally in-memory only; after offline process restart the UI shows unavailable-data rather than claiming a confirmed empty list.
-- [ ] Pending / deferred — offline Create List UX. An offline mutation is paused by TanStack Query's default `networkMode: 'online'` and resumes after reconnect; decide separately whether offline creation should be disabled or rejected immediately. No offline queue or local drafts are included here.
-
-### 10.3 — Production Error Monitoring
-
-- [x] Completed — Sentry SDK, Expo config plugin, Metro Debug IDs, monitoring wrapper, Error Boundary/auth reporting, lifecycle breadcrumbs, release/dist/environment tags, and privacy defaults are implemented in source.
-- [x] Completed — local Dev build workflow supplies release/dist/org/project, retrieves a private token from Keychain or fails before prebuild, and avoids the known Gradle lifecycle token log.
-- [x] Completed — Dev APK `SL-Dev-201-v1.0.0.apk` delivered controlled issue `SHOPPING-LIST-1`; release `shopping-list@1.0.0`, dist `201`, uploaded source maps, Debug IDs, and TypeScript symbolication were verified. The temporary trigger was removed.
-- [-] Partially completed — privacy controls are implemented, but the received event has not been separately audited and recorded for absence of sensitive fields.
-- [-] Partially completed — Sentry breadcrumbs and error reporting provide incident diagnostics, but there is no persistent structured application logger; the product decision whether one is required remains open.
-- [ ] Pending — Production runtime DSN delivery, Production source-map verification, native crash/debug-symbol reporting, and CI secret configuration.
-
-### 10.4 — Real Device Reliability Testing
-
-- [x] Completed — Pixel 8 emulator Dev APK online/offline cold starts and reconnect recovery; Dev APK `202` also built, installed, launched, opened My Lists with saved authentication, and no longer contained the temporary Sentry button.
-- [-] Partially completed — Dev build/install/start scripts were exercised successfully; this does not validate Production APKs or physical phones.
-- [ ] Pending — startup/auth recovery on Android phone #1 and #2; slow/unstable network; Supabase unavailability; background/token refresh; update-over-existing-session; deep links and notification taps.
-- [ ] Pending — Production error delivery, privacy event audit, native symbolication, and a final regression pass using `docs/PHASE_10_RELIABILITY_TEST_PLAN.md`.
-
-### CI quality gate and manual deployment hardening
-
-- [x] Completed — initial quality CI is configured in `.github/workflows/ci.yml`
-      and was verified by PR #49 (initial implementation commit `af3e3fd`): one
-      stable `quality` job runs for PRs and pushes to `develop`/`master`, plus
-      `workflow_dispatch`; frozen pnpm install, Prettier, ESLint, TypeScript and
-      Expo public-config validation remain separate steps with Node 22, pnpm
-      10.11.0, cache, minimal permissions, stale-run cancellation and no
-      environment credentials. It cannot deploy, build APKs, use emulators or
-      upload Sentry artifacts.
-- [x] Completed — `typecheck` and aggregate local `check` scripts are
-      implemented; pnpm 10.11.0 is pinned in package metadata. CI still uses
-      individual workflow steps for readable diagnostics.
-- [x] Completed — GitHub CI verification: the `quality` job passed for PR #49;
-      an intentionally malformed `ci-test.json` in commit `6ca0082` failed
-      Prettier independently of local hooks, blocked merging as a required check,
-      and CI passed again after the temporary file was removed.
-- [x] Completed — active GitHub Ruleset `Protect develop and master` protects
-      `develop` and `master`: PRs are required (0 approvals), GitHub Actions
-      status check `quality` is required and branches must be up to date; force
-      pushes and deletions are blocked, the bypass list is empty, Merge/Squash/
-      Rebase are allowed, and required deployments are disabled. `quality`, not
-      the workflow name `CI`, is the configured required status check. Manual
-      deployment workflows are not required merge checks.
-- [x] Completed — PR #49 was merged into `develop` (merge commit `370e0c9`),
-      local `develop` was fast-forwarded to `origin/develop`, and the repository
-      owner confirmed a successful automatic post-merge `quality` run. The
-      temporary failure fixture remains removed; the intentional failure and
-      recovery commits remain as expected history.
-- [ ] Pending — optional trigger-scope verification not yet performed: manual
-      `workflow_dispatch` execution of CI and CI/ruleset behavior on `master`.
-      The deployment and APK workflows are configured as manual-only, but their
-      absence from the post-merge run history has not been independently recorded.
-
-#### Manual deployment recovery
-
-- [x] Confirmed incident — manually dispatched `Supabase Development` run #31
-      stopped before changing Edge Function `notify-list-members`: the CLI needed
-      non-interactive `--yes`. The APK steps were skipped, not failed. Whether
-      `db push` applied new migrations or found the database current is unknown.
-- [x] Completed — minimal recovery is verified for Development: Supabase CLI
-      `3.3.0`, explicit `--remote=<project ref>`/`--yes`, configured Sentry secrets,
-      and Temurin JDK 17 completed migrations, Edge Function deployment, APK build
-      and artifact publication without workflow errors. The generated Development
-      APK was installed and launched successfully on a physical Android device.
-      Manual-only triggers, target selection and execution order remain unchanged.
-- [ ] Pending — verify a Production deployment before treating the same recovery
-      as proven for Production; verify Sentry event delivery and source-map
-      symbolication specifically for the CI-generated APK; complete the full
-      physical-device regression suite.
-- [ ] Deferred — optional hardening: branch guards, concurrency, GitHub
-      Environments/Production approval, preflight, dynamic artifact names,
-      Android signing/tooling validation, Auth-config deprecations, and explicit
-      partial-deployment recovery procedures. These are not part of minimal
-      recovery and must not change manual-only execution.
-- [ ] Deferred — Expo Doctor, JavaScript/component test infrastructure, local
-      isolated Supabase pgTAP CI, investigation of the missing Supabase seed file,
-      and Edge Function Deno validation. They are not part of initial quality CI.
-
-### Phase 10 evidence and closure criteria
-
-- [x] Completed — Dev APKs `200`, `201`, and `202` supplied the listed startup/offline/reconnect/Sentry/build-workflow evidence.
-- [x] Completed — confirmed root causes were addressed: Expo Router's group index selected the former placeholder route; React Query cache is process-local and the former `[]` fallback misrepresented unavailable data as empty.
-- [ ] Pending — Phase 10 closure. Production, physical-device, resilience-edge-case, privacy-event, and native-monitoring checks above must be completed or explicitly re-scoped. Detailed scenarios and evidence live in `docs/PHASE_10_RELIABILITY_TEST_PLAN.md`.
-
-## Workflow
-
-1. Реализуем один этап.
-2. Запускаем приложение.
-3. Проверяем на эмуляторе и телефоне.
-4. Исправляем UX/UI.
-5. Commit.
-6. Переходим к следующему этапу.
-
-## Current Phase
-
-**Phase 10 — App Reliability & Error Monitoring (Partially completed; see closure criteria above)**
-
-**Next development priority: UI/UX Redesign. Its completed architecture audit on
-`feature/ui-ux-redesign` (`119d5b5`) may now resume because minimal Development
-deployment recovery is verified; UI implementation still requires visual-concept
-approval and does not belong to this branch.**
+Run `pnpm check`; test affected release APKs; record device, build, network state
+and outcome. Do not mark Production or physical-device requirements complete
+without independent evidence.
