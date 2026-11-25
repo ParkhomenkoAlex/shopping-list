@@ -2,8 +2,7 @@
 
 ## Current status
 
-- **Active work:** UI/UX Redesign — intermediate integration and Development
-  validation checkpoint before R3.
+- **Active work:** UI/UX Redesign — R3 Authentication.
 - **Visual baseline:** Soft Indigo v0.2
   [`docs/design/prototype.html`](docs/design/prototype.html).
 - **Design rules:** [`docs/design/DESIGN_SYSTEM.md`](docs/design/DESIGN_SYSTEM.md).
@@ -59,9 +58,19 @@ push notifications and Sentry.
       preserves Router Back history. Pixel 8 Local verification passed for auth/session
       recovery, CRUD, offline/reconnect, headers/safe areas/StatusBar/FAB, ordinary
       navigation, duplicate-navigation protection, and warm/cold List Details deep links
-      including both Back paths. Runtime accessibility remains pending; notification
-      navigation and physical-device regression remain pending.
-- [ ] **R3 Authentication:** approved tabs/illustration; retain auth, build label,
+      including both Back paths. Runtime accessibility remains pending.
+- [x] **R0–R2 intermediate integration and Development validation checkpoint:**
+      PR #53 integrated R0–R2. Development deployment and physical Android regression
+      completed; cold-start push navigation was discovered there. PR #54 (`9403267`)
+      added the initial fix and PR #55 (`e9dea60`) completed navigation-readiness and
+      lifecycle handling. Dev Client regression passed 11/11, lifecycle regression
+      8/8, and the final no-diagnostics smoke test 4/4. Physical notification navigation
+      is user-confirmed; temporary diagnostics are removed. Local Release APK testing
+      was intentionally skipped in favor of the CI-generated Dev APK on physical Android.
+      The deployed APK commit was not independently verified; Production remains untouched.
+      `user.email || 'Member'` is source-verified, while the missing-email runtime path
+      remains untested and non-blocking. Feature and develop branch synchronization is complete.
+- [ ] **R3 Authentication — active:** approved tabs/illustration; retain auth, build label,
       pending/error and keyboard behavior.
 - [ ] **R4 My Lists:** cards, search and account/logout menu. Do not show real
       counters/progress before R7. Verify loading/offline/error/empty states and
@@ -101,15 +110,16 @@ do not override the approved prototype.
 
 - Auth failure/Retry, long background, unstable network, Supabase unavailable,
   expired/revoked session and app update with persisted session.
-- Notification taps, rapid taps on different cards, concurrent item or member
-  operations and pending cleanup after mutation failure. List Details warm/cold
-  deep-link navigation and both Back paths are verified on Pixel 8 Local.
-- Android phones, Production APK, Production Sentry/source maps, native crash
-  reporting and received-event privacy audit.
+- Rapid taps on different cards, concurrent item or member operations and pending
+  cleanup after mutation failure. List Details warm/cold deep-link navigation and both
+  Back paths are verified on Pixel 8 Local; notification navigation is verified on
+  emulator Dev Clients and user-confirmed on a physical Android CI-generated Dev APK.
+- Production APK, Production Sentry/source maps, native crash reporting and received-event
+  privacy audit. Physical Android coverage is limited to the completed Development regression.
 - Production deployment, CI-generated APK Sentry delivery/source maps, and manual
   CI/ruleset execution on `master`.
-- Deploy the English fallback sender name for `notify-list-members` through the
-  existing manual deployment workflow, then verify the resulting push content.
+- The English fallback sender `user.email || 'Member'` is source-verified. Its
+  missing-email runtime scenario remains a non-blocking verification item.
 
 ### Deferred
 
