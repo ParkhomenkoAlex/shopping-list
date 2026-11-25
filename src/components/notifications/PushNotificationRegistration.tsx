@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { router } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 
 import { useAuth } from '@/providers/AuthProvider';
 import { registerPushToken } from '@/services/PushNotificationService';
@@ -20,7 +20,43 @@ Notifications.setNotificationHandler({
 export function PushNotificationRegistration() {
     const { user } = useAuth();
     const userId = user?.id;
+    const rootNavigationState = useRootNavigationState();
     const registeredTokenRef = useRef<string | null>(null);
+    const handledResponseIdRef = useRef<string | null>(null);
+
+    const handleNotificationResponse = useCallback(
+        (response: Notifications.NotificationResponse | null) => {
+            if (!response) {
+                return;
+            }
+
+            const responseId = response.notification.request.identifier;
+
+            if (handledResponseIdRef.current === responseId) {
+                return;
+            }
+
+            const data = response.notification.request.content.data;
+            const listId = data?.listId;
+
+            if (!listId || typeof listId !== 'string') {
+                return;
+            }
+
+            handledResponseIdRef.current = responseId;
+            router.push(`/lists/${listId}`);
+
+            void Notifications.clearLastNotificationResponseAsync().catch(
+                (error) => {
+                    console.error(
+                        'Failed to clear handled notification response:',
+                        error
+                    );
+                }
+            );
+        },
+        []
+    );
 
     useEffect(() => {
         if (Platform.OS === 'android') {
@@ -31,22 +67,24 @@ export function PushNotificationRegistration() {
                 lightColor: '#208AEF',
             });
         }
+    }, []);
+
+    useEffect(() => {
+        if (!userId || !rootNavigationState.key) {
+            return;
+        }
 
         const responseSubscription =
             Notifications.addNotificationResponseReceivedListener(
-                (response) => {
-                    const data = response.notification.request.content.data;
-                    const listId = data?.listId;
-                    if (listId && typeof listId === 'string') {
-                        router.push(`/lists/${listId}`);
-                    }
-                }
+                handleNotificationResponse
             );
+
+        handleNotificationResponse(Notifications.getLastNotificationResponse());
 
         return () => {
             responseSubscription.remove();
         };
-    }, []);
+    }, [handleNotificationResponse, rootNavigationState.key, userId]);
 
     useEffect(() => {
         if (!userId) {
