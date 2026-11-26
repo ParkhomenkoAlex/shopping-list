@@ -2,7 +2,7 @@
 
 ## Current status
 
-- **Active work:** UI/UX Redesign — R3 Authentication.
+- **Active work:** UI/UX Redesign — R4 My Lists.
 - **Visual baseline:** Soft Indigo v0.2
   [`docs/design/prototype.html`](docs/design/prototype.html).
 - **Design rules:** [`docs/design/DESIGN_SYSTEM.md`](docs/design/DESIGN_SYSTEM.md).
@@ -26,8 +26,9 @@ required for release-sensitive changes and the final regression, not every UI co
 - Counters/progress use one aggregate backend query; N+1 item reads are
   prohibited. R7 investigates an RLS-compatible RPC or view.
 - Search filters already loaded authorized lists. Completed collapse is local.
-- Auth uses a bundled grocery-illustration asset matching the prototype. Account
-  avatar is the first email letter; no profiles or uploaded avatars are added.
+- Auth uses the owner-approved bundled 3D grocery bag illustration, replacing the
+  prototype illustration. Account avatar is the first email letter; no profiles or
+  uploaded avatars are added.
 - Light theme is the baseline. Dark theme, haptics and extra animation need later
   approval. Add no dependency without technical justification.
 - English is the only application interface language. UI strings, accessibility labels,
@@ -70,9 +71,15 @@ push notifications and Sentry.
       The deployed APK commit was not independently verified; Production remains untouched.
       `user.email || 'Member'` is source-verified, while the missing-email runtime path
       remains untested and non-blocking. Feature and develop branch synchronization is complete.
-- [ ] **R3 Authentication — active:** approved tabs/illustration; retain auth, build label,
-      pending/error and keyboard behavior.
-- [ ] **R4 My Lists:** cards, search and account/logout menu. Do not show real
+- [x] **R3 Authentication — accepted:** owner-approved 3D grocery bag illustration,
+      `Screen`, `Button`, `TextField`, `BuildVersionLabel` and existing tokens compose
+      the auth screen. Explicit Sign in/Register selection preserves auth logic, protected
+      navigation, build label, pending/error behavior and credentials. Owner-confirmed
+      visual and functional verification passed on Pixel 8 and Pixel 9, including keyboard,
+      validation, error handling, registration, sign-in, duplicate submission, logout and
+      session restoration. Static checks passed; no dependency or backend change; Production
+      remains untouched. Dedicated screen-reader testing remains pending.
+- [ ] **R4 My Lists — active:** cards, search and account/logout menu. Do not show real
       counters/progress before R7. Verify loading/offline/error/empty states and
       duplicate-navigation guard.
 - [ ] **R5 List Details/items:** compact rows, quick-create UI, list actions and
@@ -110,6 +117,7 @@ do not override the approved prototype.
 
 - Auth failure/Retry, long background, unstable network, Supabase unavailable,
   expired/revoked session and app update with persisted session.
+- Dedicated screen-reader testing for R3 Authentication.
 - Rapid taps on different cards, concurrent item or member operations and pending
   cleanup after mutation failure. List Details warm/cold deep-link navigation and both
   Back paths are verified on Pixel 8 Local; notification navigation is verified on
