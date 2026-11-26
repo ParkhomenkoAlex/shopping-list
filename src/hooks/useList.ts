@@ -9,6 +9,7 @@ import {
     getLists,
     updateList,
 } from '@/services/ListService';
+import { getCurrentUserListMemberships } from '@/services/ListMemberService';
 import { useAuth } from '@/providers/AuthProvider';
 
 export function useList(id?: string) {
@@ -25,6 +26,16 @@ export function useList(id?: string) {
         queryKey: ['lists'],
         queryFn: getLists,
         enabled: !id,
+    });
+
+    const {
+        data: listMembershipsData,
+        error: listMembershipsError,
+        refetch: refetchListMemberships,
+    } = useQuery({
+        queryKey: ['current-user-list-memberships', userId],
+        queryFn: () => getCurrentUserListMemberships(userId!),
+        enabled: !id && Boolean(userId),
     });
 
     const {
@@ -88,6 +99,9 @@ export function useList(id?: string) {
                     void queryClient.invalidateQueries({
                         queryKey: ['lists'],
                     });
+                    void queryClient.invalidateQueries({
+                        queryKey: ['current-user-list-memberships', userId],
+                    });
                 }
             )
             .on(
@@ -101,6 +115,9 @@ export function useList(id?: string) {
                 () => {
                     void queryClient.invalidateQueries({
                         queryKey: ['lists'],
+                    });
+                    void queryClient.invalidateQueries({
+                        queryKey: ['current-user-list-memberships', userId],
                     });
                 }
             )
@@ -123,6 +140,9 @@ export function useList(id?: string) {
         onSuccess: () => {
             void queryClient.invalidateQueries({
                 queryKey: ['lists'],
+            });
+            void queryClient.invalidateQueries({
+                queryKey: ['current-user-list-memberships', userId],
             });
         },
     });
@@ -160,6 +180,10 @@ export function useList(id?: string) {
         isListsLoading,
         listsError,
         refetchLists,
+        listMemberships: listMembershipsData ?? [],
+        hasListMembershipsData: listMembershipsData !== undefined,
+        listMembershipsError,
+        refetchListMemberships,
 
         list: listData ?? null,
         hasListData: listData !== undefined,

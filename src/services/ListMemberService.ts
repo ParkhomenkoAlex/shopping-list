@@ -4,8 +4,28 @@ import type { Database, Tables } from '@/types/database/database.types';
 
 export type ListMemberRole = Tables<'list_members'>['role'];
 
+export type CurrentListMembership = Pick<
+    Tables<'list_members'>,
+    'list_id' | 'role'
+>;
+
 export type SharedListMember =
     Database['public']['Functions']['get_list_shared_members']['Returns'][number];
+
+export async function getCurrentUserListMemberships(
+    userId: string
+): Promise<CurrentListMembership[]> {
+    const { data, error } = await supabase
+        .from('list_members')
+        .select('list_id, role')
+        .eq('user_id', userId);
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
 
 export async function getListMemberRole(
     listId: string,

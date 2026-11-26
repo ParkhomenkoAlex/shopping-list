@@ -94,23 +94,40 @@ notification delivery without evidence.
 
 ### Remaining dependency-aware stages
 
-- [ ] **R4 Friendly Edition assets and design system — active:** audit existing
-      tokens and appearance catalog; prepare and approve the final 19-asset
-      illustration set; define the minimal token and asset additions; preserve
-      the authentication illustration; add neither unrelated abstractions nor
-      dependencies.
-- [ ] **R5 List appearance and statistics data layer:** audit database and API
-      contracts; persist `icon_key`/`color_key` metadata; migrate and backfill
-      legacy data; add CHECK constraints for supported semantic keys; and retain
-      safe groceries/indigo defaults. Regenerate database types and implement one
-      authorized aggregate RPC or view, with the final approach chosen by the
-      audit. Verify SQL/RLS isolation, no N+1 item reads, realtime sync, mutation
-      and cache invalidation, offline/reconnect behavior, Development deployment
-      and list CRUD after explicit approval. Separate data/API and UI commits.
-- [ ] **R6 Main screen:** dynamic greeting, account popup, functional
-      list-completion banner, All/Mine/Shared filters, circular New list action,
-      and friendly cards backed by real appearance/statistics data. Preserve
-      existing navigation guards and functionality.
+- [ ] **R4 Friendly Edition assets and design system — active:** 21 approved
+      PNGs are imported through the typed static `src/theme/illustrations.ts`
+      catalog: ten semantic Clean/Cozy pairs plus one shared `no-image.png`
+      fallback. A temporary global Clean/Cozy setting uses existing local
+      storage only and defaults to Cozy. The authentication illustration remains
+      unchanged. Category and greeting art is not yet available and therefore
+      uses the common fallback. Final visual owner review remains required.
+- [ ] **R5 List appearance and statistics data layer:** audit confirms that
+      `getLists()` returns only `id`, `name`, `description`, timestamps; it has
+      no `owner_id`, appearance fields or aggregate item statistics. Membership
+      roles exist in `list_members`; a single current-user membership query now
+      supports All/Mine/Shared without N+1, but items are fetched per list only
+      in List Details, so counts would be N+1. RLS limits lists/items/members to
+      authorized members; realtime invalidates list and membership queries,
+      while React Query retains cached data during refetch. Next step after
+      approval: add stable
+      `icon_key`/`color_key` with defaults and CHECK constraints, backfill,
+      regenerate types, then introduce a security-invoker authorized aggregate
+      RPC returning each accessible list's owner id, membership role, item count
+      and completed-item count in one call. Verify RLS isolation, no N+1 reads,
+      realtime/cache invalidation for list, item and membership changes, and
+      offline/reconnect, Development deployment and list CRUD after explicit
+      approval before data/API and UI commits.
+- [ ] **R6 Main screen — partial first visual slice:** implemented dynamic
+      greeting, account popup with temporary Clean/Cozy selector and existing
+      logout, circular New list action, All/Mine/Shared filters backed by one
+      membership query, friendly fallback cards, and illustrated
+      no-lists/no-shared-lists/error/offline states. Progress banner remains
+      deferred until R5 provides authorized statistics data. Preserve existing
+      navigation guards and functionality. Pixel 8 manual review recorded 19
+      passing cases and no failures; this includes Account menu retest,
+      OfflineBanner disappearance, selected-filter persistence, filtering,
+      offline and reconnect. The membership-refetch error was not reproduced at
+      runtime. Offline cold start remains blocked until Release APK verification.
 - [ ] **R7 List Details and items UI:** update header/action placement, item
       progress banner, friendly rows, Quick Add and completed section while
       retaining item CRUD and reliability behavior. Do not invent unsupported

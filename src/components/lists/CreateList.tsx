@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { CreateListModal } from '@/components/lists/CreateListModal';
 import { useList } from '@/hooks/useList';
 import type { CreateListForm } from '@/types/CreateListForm';
+import { semanticColors } from '@/theme/semantic';
+import { elevation, spacing } from '@/theme/tokens';
 
 const initialForm: CreateListForm = {
     name: '',
@@ -59,13 +62,18 @@ export function CreateList() {
     return (
         <>
             <Pressable
+                accessibilityLabel="Create list"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isCreating, busy: isCreating }}
                 style={styles.addButton}
                 onPress={handleOpenModal}
                 disabled={isCreating}
             >
-                <Text style={styles.addButtonText}>
-                    {isCreating ? 'Creating...' : 'Add list'}
-                </Text>
+                <Ionicons
+                    color={semanticColors.content.onPrimary}
+                    name="add"
+                    size={28}
+                />
             </Pressable>
 
             <CreateListModal
@@ -83,16 +91,14 @@ export function CreateList() {
 
 const styles = StyleSheet.create({
     addButton: {
-        marginTop: 12,
-        paddingVertical: 14,
-        borderRadius: 8,
-        backgroundColor: '#208AEF',
+        alignSelf: 'flex-end',
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        marginTop: spacing.md,
+        backgroundColor: semanticColors.control.primary,
         alignItems: 'center',
-    },
-
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
+        justifyContent: 'center',
+        ...elevation.floating,
     },
 });
