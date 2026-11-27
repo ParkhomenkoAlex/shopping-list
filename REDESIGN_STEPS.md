@@ -192,6 +192,11 @@ but never override the approved prototype.
   completed Development regression.
 - Production deployment, CI-generated APK Sentry delivery/source maps, and
   manual CI/ruleset execution on master.
+- Both Cloud Safety hotfix PRs are merged. A Development backup was created on
+  2026-11-27, but an isolated restore test is blocked by an incompatible managed
+  Auth schema in the tested Local Supabase image. Cloud deployment and removal
+  of older credentials remain deferred pending a compatible restore verification
+  and owner approval.
 - The English fallback sender `user.email || 'Member'` is source-verified; its
   missing-email runtime scenario remains a non-blocking verification item.
 

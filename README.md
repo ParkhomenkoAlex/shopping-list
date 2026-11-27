@@ -109,8 +109,8 @@ when the remote migration history or dry-run plan changes between review and
 apply.
 
 Before enabling either workflow, create GitHub Environments named
-`development` and `production`. Configure required reviewers for both, with a
-separate Production approver, then scope these secrets to the matching
+`development` and `production`. Configure the current single required reviewer
+for both, then scope these secrets to the matching
 Environment: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DEV_PROJECT_REF` or
 `SUPABASE_PROD_PROJECT_REF`, the matching `EXPO_PUBLIC_SUPABASE_*` values,
 `SENTRY_AUTH_TOKEN`, and the matching Sentry DSN. Add the non-secret
@@ -126,6 +126,12 @@ is required before the deployment job can use `--yes` to apply migrations. The
 same Environment also protects the read-only plan job because it supplies the
 environment-scoped credentials, so reviewers approve twice by design: first to
 generate the preflight artifact, then to deploy the unchanged normalized plan.
+
+Both Cloud Safety hotfix PRs are merged. A Development backup was created on
+2026-11-27, but an isolated restore test is blocked because its managed Auth
+schema includes columns unavailable in the tested Local Supabase image. Cloud
+deployment and removal of older credentials remain deferred until a compatible
+restore is verified and owner approval is given.
 
 The authenticated client registers an Expo push token after permission approval.
 `notify-list-members` sends notifications, and a notification tap routes to
