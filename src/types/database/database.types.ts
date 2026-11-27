@@ -97,22 +97,28 @@ export type Database = {
             };
             lists: {
                 Row: {
+                    color_key: string;
                     created_at: string;
                     description: string | null;
+                    icon_key: string;
                     id: string;
                     name: string;
                     updated_at: string;
                 };
                 Insert: {
+                    color_key?: string;
                     created_at?: string;
                     description?: string | null;
+                    icon_key?: string;
                     id?: string;
                     name: string;
                     updated_at?: string;
                 };
                 Update: {
+                    color_key?: string;
                     created_at?: string;
                     description?: string | null;
+                    icon_key?: string;
                     id?: string;
                     name?: string;
                     updated_at?: string;
@@ -154,6 +160,22 @@ export type Database = {
             add_list_member_by_email: {
                 Args: { target_email: string; target_list_id: string };
                 Returns: undefined;
+            };
+            get_accessible_list_summaries: {
+                Args: never;
+                Returns: {
+                    color_key: string;
+                    completed_item_count: number;
+                    created_at: string;
+                    description: string;
+                    icon_key: string;
+                    id: string;
+                    item_count: number;
+                    membership_role: Database['public']['Enums']['list_member_role'];
+                    name: string;
+                    owner_id: string;
+                    updated_at: string;
+                }[];
             };
             get_list_shared_members: {
                 Args: { target_list_id: string };

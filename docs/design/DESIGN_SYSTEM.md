@@ -1,154 +1,183 @@
-# Soft Indigo v0.2 — Design System
+# Soft Indigo v0.3 — Friendly Edition design system
 
-## Статус и источник истины
+## Scope and source of truth
 
-`prototype.html` — утверждённый визуальный baseline Soft Indigo v0.2. Этот
-документ переводит его значения в React Native tokens; он не заменяет prototype.
-При расхождении между ними сначала обновляется и утверждается prototype, затем
-React Native реализация.
+[prototype.html](prototype.html) is the approved visual and interaction reference
+for Soft Indigo v0.3 — Friendly Edition. This document translates the reference
+into React Native token and component conventions; it does not replace the
+prototype. Product scope, delivery order and acceptance criteria belong to
+[REDESIGN_STEPS.md](../../REDESIGN_STEPS.md).
 
-Implementation phases, product decisions and acceptance criteria live in
-[`REDESIGN_STEPS.md`](../../REDESIGN_STEPS.md). This document owns only visual
-tokens, component presentation and React Native rendering conventions.
+The approved prototype is the visual and interaction reference; explicit
+owner-approved product decisions remain authoritative for functionality. The
+prototype simulates authentication, data, network states, notifications and
+temporary SVG artwork, none of which are production contracts. If the prototype,
+documentation, approved requirements or implementation conflict, report it and
+obtain owner approval before changing the relevant requirement or reference.
+Light theme remains the baseline; dark theme is deferred.
 
 ## Foundations
 
-### Цвета
+Existing src/theme/tokens.ts and src/theme/semantic.ts remain the source for
+implemented values. Future token changes require a visual justification in the
+phase that first needs them. Screens use semantic aliases instead of new
+hard-coded values.
 
-| Token                   | Значение    | Назначение                                                    |
-| ----------------------- | ----------- | ------------------------------------------------------------- |
-| `color.canvas`          | `#E9EAF3`   | внешний демонстрационный canvas; не обязательный экранный фон |
-| `color.background`      | `#F6F7FC`   | основной фон экранов                                          |
-| `color.surface`         | `#FFFFFF`   | карточки, dialog и sheet                                      |
-| `color.text.primary`    | `#20243A`   | заголовки и основной текст                                    |
-| `color.text.secondary`  | `#62677E`   | описания и supporting text                                    |
-| `color.text.muted`      | `#74788D`   | completed text и метаданные                                   |
-| `color.border`          | `#E8E9F1`   | границы карточек и header/footer                              |
-| `color.border.strong`   | `#DCDFEA`   | поля ввода и выбор в picker                                   |
-| `color.border.subtle`   | `#EFF0F5`   | разделители rows                                              |
-| `color.primary`         | `#585BD6`   | primary action, focus, progress, checkbox                     |
-| `color.primary.strong`  | `#4548B8`   | selected text / stronger emphasis                             |
-| `color.primary.subtle`  | `#E6E9FF`   | selected surfaces, icon backgrounds, segments                 |
-| `color.warning.surface` | `#FFF1D8`   | offline/notice surface                                        |
-| `color.danger`          | `#C93649`   | destructive action                                            |
-| `color.scrim`           | `#20243A66` | sheet/dialog overlay                                          |
+| Area                        | Current baseline                                                |
+| --------------------------- | --------------------------------------------------------------- |
+| Screen background / surface | #F6F7FC / #FFFFFF                                               |
+| Main / supporting text      | #20243A / #62677E                                               |
+| Indigo / selected tint      | #585BD6 / #E6E9FF                                               |
+| Success / success tint      | #21866B / #D9F2E8                                               |
+| Warning tint / danger       | #FFF1D8 / #C93649                                               |
+| Spacing                     | 4, 8, 12, 16, 20, 24, 28, 32, 40                                |
+| Touch target                | at least 44 × 44                                                |
+| System typography           | 12–30 pt, weights 400/600/700                                   |
+| Core radii                  | 10 swatch, 12 control, 14 button, 17–20 card, 23–25 modal/sheet |
 
-Семантические состояния должны ссылаться на tokens, а не на hex в экранных
-компонентах: `feedback.error`, `feedback.warning`, `feedback.success`,
-`control.disabled`, `focus.ring`. Их точные success/disabled оттенки нужно
-утвердить на первом визуальном проходе: prototype задаёт warning и danger, но не
-задаёт полноценную semantic success scale.
+Use restrained borders and elevation rather than copying the prototype's outer
+phone shadow. React Native shadow and Android elevation are platform-specific.
+Focused, disabled and error controls retain stable geometry.
 
-### Palette для списков
+## Friendly Edition illustrations
 
-Каталог не хранит hex в базе. У stable `colorKey` есть пара foreground/tint:
+Friendly Edition uses two independent locally bundled illustration sets:
+`basket` and `meerkat`. Each set has its own transparent-background assets and
+supports Clean and Cozy variants for the same semantic state keys. The approved
+bundled authentication grocery-bag illustration remains unchanged.
 
-| `colorKey` | Accent    | Tint      |
-| ---------- | --------- | --------- |
-| `indigo`   | `#585BD6` | `#E6E9FF` |
-| `blue`     | `#3979C6` | `#DCEAFF` |
-| `green`    | `#21866B` | `#D9F2E8` |
-| `teal`     | `#298BA8` | `#DDF1F8` |
-| `purple`   | `#9061C6` | `#EDE1FC` |
-| `pink`     | `#C65C91` | `#F9E0ED` |
-| `amber`    | `#D18A25` | `#FFF0D5` |
-| `gray`     | `#6B7280` | `#E9EAF0` |
+`src/theme/illustrations.ts` owns the static Metro-compatible imports and maps
+semantic keys to the active set and Clean/Cozy style:
 
-### Typography
+| Group              | Semantic keys                                                    |
+| ------------------ | ---------------------------------------------------------------- |
+| Empty states       | no-items, no-lists, no-shared-lists                              |
+| Shopping progress  | basket-empty, basket-partial, basket-filled, basket-complete     |
+| Reliability states | error, offline, unavailable                                      |
+| Greetings          | greeting-morning, greeting-day, greeting-evening, greeting-night |
+| List icons         | Eight stable `listAppearance` icon keys, mapped per set          |
 
-Используется platform system font: custom font не утверждён и не нужен на первой
-итерации. Prototype использует 12, 13, 16, 21, 25 и 30 pt. В RN используются
-`fontWeight` `400`, `600`, `700` (CSS `650` отображается как ближайший доступный
-вес):
+List icon and time-of-day greeting assets are set-specific. `no-image.png` is
+the shared fallback when no semantic key is available; it is not duplicated.
+The temporary global Clean/Cozy selection is persisted only locally through
+Expo SQLite `localStorage`; it has no Supabase, navigation, authentication or
+query-cache effect and can be removed once one approved style is selected.
+Prototype SVGs remain placeholders and must not be shipped as the final asset
+set.
 
-| Role                 | Size / line height | Weight                        |
-| -------------------- | ------------------ | ----------------------------- |
-| Screen title         | 30 / 36            | 700                           |
-| Sheet title          | 21 / 28            | 700                           |
-| Dialog/account title | 25 / 32            | 700                           |
-| Body / input         | 16 / 22            | 400                           |
-| Button / label       | 16 / 22            | 600                           |
-| Section label        | 13 / 18            | 700, letter spacing `0.5–0.8` |
-| Supporting/meta      | 12–13 / 18         | 400–600                       |
+src/theme/listAppearance.ts owns the eight stable icon keys and eight semantic
+colors: indigo, blue, green, teal, purple, pink, amber, gray. `icon_key` and
+`color_key` are persisted with groceries/indigo defaults and database CHECK
+constraints; image paths and arbitrary colors are never persisted. Groceries
+and indigo remain safe client fallbacks for unknown or legacy values.
+Illustration choice and color choice are independent.
 
-### Layout, radius и elevation
+## Component conventions
 
-Base spacing scale: `4, 8, 12, 16, 20, 24, 28, 32, 40`. Минимальный target для
-touch control — 44×44. Основные радиусы: 10 (swatch), 12 (input/secondary), 14
-(primary/button/icon), 17 (card), 24 (auth logo), 25 (bottom sheet top). Радиус
-38 относится только к макету телефона и не переносится в приложение.
+| Component                | Friendly Edition convention                                                                                                                                                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header                   | One visible owner per route; no technical labels or duplicate Back controls.                                                                                                                                                                                                                    |
+| Avatar and account popup | Email initial. Anchored overlay shows email, build/version and Log out; it does not resize content, dismisses on outside press or Android Back, and needs no logout confirmation.                                                                                                               |
+| Segments                 | Indigo-tint container, white selected surface and selected accessibility state.                                                                                                                                                                                                                 |
+| List card                | Friendly white rounded card, set-specific category illustration, title and chevron. R5 statistics provide counts and progress; exact counts determine completion, with incomplete rounded progress capped at 99%. The neutral shared indicator denotes lists shared with the current user only. |
+| Progress                 | Incomplete bars use common Indigo regardless of list appearance; completed bars use success color and a clear completion indicator.                                                                                                                                                             |
+| Item row                 | Compact completion control, name, optional quantity/unit badge and optional note; edit/delete remain accessible.                                                                                                                                                                                |
+| Modal and picker         | Centered create/edit and Sharing modals; eight icon choices, eight independent colors and a live card preview.                                                                                                                                                                                  |
+| States                   | Skeleton initial loading, illustrated empty states, Retry initial errors, non-blocking refresh error when cached data exists, dedicated no-cache offline state.                                                                                                                                 |
 
-Prototype использует `0 20 55 #25263822` для оболочки телефона. В приложении
-этот внешний shadow не нужен; для surface применяются очень сдержанные iOS
-`shadow*` и Android `elevation`, либо только border. Не пытаться копировать CSS
-box-shadow буквально: Android elevation и iOS shadow имеют разные модели.
+Use native Pressable, Modal, Image, TextInput, ScrollView and virtualized lists
+where appropriate. Do not introduce a UI library or abstraction before its first
+real consumer. Keep screen-specific layouts local. Tokens and presentational UI
+primitives, including Button, TextField, Screen and StatePanel, contain no
+Supabase, Router, React Query or mutation logic; preserve their existing
+contracts and feature hook contracts unless a change is separately approved.
+Screen uses the Expo Router safe-area context already supplied by the app;
+integrations select edges explicitly to prevent duplicate insets. The 390 × 820
+CSS reference is not an implemented token value or fixed native viewport:
+support safe areas, keyboard insets, font scaling, reduced motion and small
+Android screens. Verify long list names, emails and item notes, plus Android
+Back behavior. Do not introduce unrelated dependencies or abstractions.
 
-## Components
+## Product presentation rules
 
-| Component          | Варианты / контракт                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| `Button`           | primary, secondary, destructive, icon; busy/disabled state, `accessibilityState`    |
-| `TextField`        | label, placeholder, focused, disabled, validation/error; 13 px label, 16 px value   |
-| `SegmentedControl` | auth Sign in/Register; selected surface + subtle shadow                             |
-| `IconTile`         | 44×44 tinted list icon; icon 24                                                     |
-| `ListCard`         | icon, name, `total · completed`, percentage, 5 px progress; pressed state           |
-| `ShoppingItemRow`  | 24 px circular checkbox, compact content, item-only pending indicator and actions   |
-| `ProgressBar`      | 5 px, rounded, accessible progress value                                            |
-| `Sheet` / `Dialog` | scrim, 25 px top radius for sheet, close affordance, safe-area + keyboard aware     |
-| `IconColorPicker`  | catalog grid (4 columns), selected 2 px primary border, color circles, live preview |
-| `StatePanel`       | loading, empty, offline and retryable error; never hides cached usable data         |
+### Main screen
 
-## Interaction and system states
+The implemented My Lists slice shows a local-time greeting, set-specific
+greeting illustration, email-initial avatar, anchored account menu, circular
+New list action, and illustrated initial empty/error/offline states. Do not add
+a redundant Shopping List/My Lists title, search field or bottom navigation.
 
-- Pressed: native `Pressable` pressed opacity/background; no arbitrary animation
-  framework in the first pass.
-- Focus: use a primary border without changing input geometry; preserve visible
-  keyboard focus where the platform supplies it.
-- Disabled: visual opacity plus real `disabled`/`accessibilityState`; a pending
-  mutation blocks only its own entity.
-- Loading/refetch: initial empty-data load uses a bounded indicator; cached data
-  stays visible for background refetch.
-- Offline: use the existing `OfflineBanner`, NetInfo and query-paused state;
-  never replace cached content with a false empty state.
-- Error: user-safe text and existing Retry path, never raw Supabase error.
+All / Mine / Shared is implemented with one authorized `list_members` query
+for the current user's role; it does not use per-list requests. The
+shopping-progress banner remains dependent on the R5 authorized statistics
+contract and must not infer item statistics from incomplete client data.
 
-## React Native implementation architecture
+All includes every accessible list. Mine includes lists owned by the current
+user, including lists shared with others. Shared includes lists owned by another
+user and shared with the current user.
 
-R1 implements only the foundation below; other primitives appear only with their
-first consumer:
+Main-screen progress measures **completed lists**, not aggregate completed
+items, for the currently selected All, Mine or Shared filter. A list is complete
+only if it has at least one item and every item is complete. Empty lists remain
+visible but are excluded from aggregation. Hide the progress banner and show the
+appropriate empty state when the selected filter has no lists. When it has lists
+but all are empty, show neither an artificial completion percentage nor a
+success state, and state the empty-list count. Derive progress from current
+data, synchronize authorized shared-list changes, and automatically reopen a
+completed list when an incomplete item is added or a completed item is
+unchecked. Keep available data visible during background refresh. Exact counts,
+not rounded percentages, determine completion; incomplete rounded values are
+capped at 99%. Basket artwork is empty at 0%, partial at 1–49%, filled at
+50–99%, and complete with success treatment at 100%.
 
-```text
-src/theme/
-  tokens.ts        # raw palette, spacing, radii, typography
-  semantic.ts      # light semantic aliases; no dark theme commitment yet
-  listAppearance.ts# iconKey/colorKey catalog and display mapping
-src/components/ui/
-  Button.tsx, TextField.tsx, Screen.tsx, StatePanel.tsx
-```
+### List details and forms
 
-Keep screen-specific layout styles local. Tokens and UI primitives must not hold
-Supabase, Router, React Query or mutation logic. Existing feature components keep
-their hook contracts; the redesign changes composition and styles incrementally.
-`Screen` uses the installed `react-native-safe-area-context`. R2 confirmed that
-Expo Router already supplies the root safe-area provider, so no app-owned provider
-is added. Integrating routes use explicit edges to avoid duplicate insets.
+The detail header places Back, list illustration/name/optional description,
+Sharing, Notify members and overflow actions in one row. Sharing is outlined
+for private lists and filled for shared lists. Notify is disabled with no other
+members. Detail progress measures completed **item entries**, not physical
+quantities. Use TO BUY and COMPLETED sections, local completed collapse, and
+compact Quick Add with expandable More details.
 
-## HTML-to-native differences
+Extended item details are planned, not currently supported data contracts:
+required name; optional decimal quantity defaulting to one; optional preset or
+custom unit; and optional note. Display quantity/unit compactly and notes only
+when present. Do not introduce partial completion.
 
-- CSS layout is a 390×820 visual reference, not a fixed RN viewport. Use
-  `SafeAreaView`, flex layout, `ScrollView`/`FlatList`, dynamic type and keyboard
-  insets.
-- `box-shadow`, `:focus-visible`, CSS animations and bottom-fixed DOM controls
-  require platform-specific RN equivalents.
-- Prototype SVG paths are reference artwork. Do not add `react-native-svg` only
-  for the auth illustration. Используется dedicated bundled graphic asset,
-  сохраняющий утверждённый внешний вид grocery illustration.
-- Native `Modal` accessibility, Android back dismissal and keyboard behavior
-  must be explicitly tested; CSS overlay behavior is not sufficient.
+Create/Edit List uses a centered modal with required name, optional description,
+eight illustration choices, eight independent color choices and live preview.
+Create is disabled without a name, opens the new list after success, and Edit is
+prefilled. Preserve existing validation, authorization and mutation guards.
+
+### Sharing, notifications and states
+
+Sharing is a dedicated header action with a centered role-aware modal. Only
+authorized users manage membership. Owner actions are Edit list and Delete list;
+member action is Leave list. Delete and Leave require confirmation. Do not
+expose Leave as functional before authorization/RLS work is complete. Do not add
+Duplicate list, Clear completed or Uncheck all.
+
+Keep manual Notify members. It targets every other authorized participant,
+regardless of sender role, never the sender, and preserves verified
+unique-recipient and multi-device behavior. Planned automatic events are member
+added (added member), member leaves (owner), member removed (removed member),
+and shared-list deleted (remaining participants). Ordinary item CRUD and
+completion changes do not send automatic pushes. Accessible notification routes
+open the list for member-added, manual-notify and member-left events;
+removed/deleted events open My Lists. Stale or inaccessible targets resolve
+safely.
+
+Retain data during background refresh; use per-entity pending feedback and block
+duplicate submissions. Show an OfflineBanner with cached data, a distinct
+no-cache offline state, and automatic refresh after reconnect. Never imply that
+an unsuccessful mutation was saved. Offline-first persistence and queued
+mutations remain deferred.
 
 ## Visual review gate
 
-For each implemented slice: prototype reference → RN implementation → emulator
-screenshots at the same state → side-by-side comparison → corrections → owner
-approval → commit. A visual match never waives functional, offline, accessibility
-or reliability verification.
+For every slice: approved prototype → React Native implementation → emulator
+screenshots → comparison → corrections → owner approval → commit. Visual
+acceptance never waives functional, authorization, offline, accessibility or
+reliability verification. Application UI strings, accessibility labels,
+generated messages, identifiers and comments remain English-only; user content
+may use any language.

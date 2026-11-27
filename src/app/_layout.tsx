@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { AppState, Platform, StatusBar } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
+import { IllustrationStyleProvider } from '@/providers/IllustrationStyleProvider';
 import { queryClient } from '@/lib/QueryClient';
 import { PushNotificationRegistration } from '@/components/notifications/PushNotificationRegistration';
 import { AppErrorBoundary } from '@/components/reliability/AppErrorBoundary';
@@ -89,10 +90,12 @@ export default function RootLayout() {
                 barStyle="dark-content"
             />
             <QueryClientProvider client={queryClient}>
-                <AuthProvider>
-                    <AppLifecycle />
-                    <RootNavigator />
-                </AuthProvider>
+                <IllustrationStyleProvider>
+                    <AuthProvider>
+                        <AppLifecycle />
+                        <RootNavigator />
+                    </AuthProvider>
+                </IllustrationStyleProvider>
             </QueryClientProvider>
         </AppErrorBoundary>
     );

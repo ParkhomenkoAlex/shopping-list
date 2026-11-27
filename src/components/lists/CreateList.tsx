@@ -1,98 +1,69 @@
-import { useState } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { CreateListModal } from '@/components/lists/CreateListModal';
-import { useList } from '@/hooks/useList';
-import type { CreateListForm } from '@/types/CreateListForm';
+import { semanticColors } from '@/theme/semantic';
+import { elevation, spacing } from '@/theme/tokens';
 
-const initialForm: CreateListForm = {
-    name: '',
-    description: '',
+type CreateListProps = {
+    isCreating: boolean;
+    onPress: () => void;
+    variant?: 'circle' | 'inline';
 };
 
-export function CreateList() {
-    const { isCreating, createError, createList } = useList();
-
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [form, setForm] = useState<CreateListForm>(initialForm);
-
-    const handleChange = <K extends keyof CreateListForm>(
-        field: K,
-        value: CreateListForm[K]
-    ) => {
-        setForm((currentForm) => ({
-            ...currentForm,
-            [field]: value,
-        }));
-    };
-
-    const handleOpenModal = () => {
-        setIsModalVisible(true);
-    };
-
-    const handleCreateList = async () => {
-        const name = form.name.trim();
-        const description = form.description.trim();
-
-        if (!name) {
-            return;
-        }
-
-        try {
-            await createList({
-                name,
-                description: description || null,
-            });
-
-            setForm(initialForm);
-            setIsModalVisible(false);
-        } catch (error) {
-            console.error('Failed to create list:', error);
-        }
-    };
-
-    const handleCancelCreateList = () => {
-        setForm(initialForm);
-        setIsModalVisible(false);
-    };
-
+export function CreateList({
+    isCreating,
+    onPress,
+    variant = 'circle',
+}: CreateListProps) {
     return (
-        <>
-            <Pressable
-                style={styles.addButton}
-                onPress={handleOpenModal}
-                disabled={isCreating}
-            >
-                <Text style={styles.addButtonText}>
-                    {isCreating ? 'Creating...' : 'Add list'}
-                </Text>
-            </Pressable>
-
-            <CreateListModal
-                visible={isModalVisible}
-                form={form}
-                isCreating={isCreating}
-                error={createError}
-                onChange={handleChange}
-                onCancel={handleCancelCreateList}
-                onSubmit={handleCreateList}
+        <Pressable
+            accessibilityLabel="Create a list"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isCreating, busy: isCreating }}
+            disabled={isCreating}
+            onPress={onPress}
+            style={
+                variant === 'circle' ? styles.addButton : styles.inlineButton
+            }
+        >
+            <Ionicons
+                color={semanticColors.content.onPrimary}
+                name="add"
+                size={variant === 'circle' ? 28 : 20}
             />
-        </>
+            {variant === 'inline' && (
+                <Text style={styles.inlineButtonText}>Create a list</Text>
+            )}
+        </Pressable>
     );
 }
 
 const styles = StyleSheet.create({
     addButton: {
-        marginTop: 12,
-        paddingVertical: 14,
-        borderRadius: 8,
-        backgroundColor: '#208AEF',
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: semanticColors.control.primary,
         alignItems: 'center',
+        justifyContent: 'center',
+        ...elevation.floating,
+        elevation: 2,
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
     },
-
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
+    inlineButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        minHeight: 48,
+        borderRadius: 14,
+        backgroundColor: semanticColors.control.primary,
+        marginTop: spacing.lg,
+        paddingHorizontal: spacing.lg,
+    },
+    inlineButtonText: {
+        color: semanticColors.content.onPrimary,
+        fontWeight: '700',
     },
 });

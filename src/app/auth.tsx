@@ -1,9 +1,23 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
-import { useAuth } from '@/providers/AuthProvider';
 import { BuildVersionLabel } from '@/components/BuildVersionLabel';
+import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
+import { TextField } from '@/components/ui/TextField';
+import { useAuth } from '@/providers/AuthProvider';
+import { elevation, radii, spacing, typography } from '@/theme/tokens';
+import { semanticColors } from '@/theme/semantic';
+
+const groceryBagIllustration = require('../../assets/images/auth-grocery-bag.png');
 
 export default function AuthScreen() {
     const { signIn, signUp, isLoading } = useAuth();
@@ -13,6 +27,7 @@ export default function AuthScreen() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isFormDisabled = isSubmitting || isLoading;
 
     const handleSubmit = async () => {
         const normalizedEmail = email.trim();
@@ -40,133 +55,221 @@ export default function AuthScreen() {
         }
     };
 
-    const handleToggleMode = () => {
-        setIsRegistering((currentMode) => !currentMode);
+    const handleSelectMode = (nextIsRegistering: boolean) => {
+        if (nextIsRegistering === isRegistering) {
+            return;
+        }
+
+        setIsRegistering(nextIsRegistering);
         setError(null);
     };
 
     return (
         <Screen edges={['top', 'bottom']} padded={false}>
-            <View style={styles.container}>
-                <Text accessibilityRole="header" style={styles.title}>
-                    {isRegistering ? 'Create account' : 'Sign in'}
-                </Text>
-
-                <BuildVersionLabel style={styles.buildVersion} />
-
-                <TextInput
-                    style={styles.input}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Email"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="email-address"
-                    editable={!isSubmitting && !isLoading}
-                />
-
-                <TextInput
-                    style={styles.input}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Password"
-                    secureTextEntry
-                    editable={!isSubmitting && !isLoading}
-                />
-
-                {error && <Text style={styles.error}>{error}</Text>}
-
-                <Pressable
-                    style={[
-                        styles.submitButton,
-                        (isSubmitting || isLoading) && styles.disabledButton,
-                    ]}
-                    onPress={handleSubmit}
-                    disabled={isSubmitting || isLoading}
+            <KeyboardAvoidingView
+                behavior={Platform.select({
+                    ios: 'padding',
+                    android: 'height',
+                })}
+                style={styles.keyboardAvoidingView}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                    style={styles.scrollView}
                 >
-                    <Text style={styles.submitButtonText}>
-                        {isSubmitting
-                            ? 'Please wait...'
-                            : isRegistering
-                              ? 'Register'
-                              : 'Sign in'}
-                    </Text>
-                </Pressable>
+                    <View style={styles.content}>
+                        <View style={styles.hero}>
+                            <Image
+                                accessible={false}
+                                resizeMode="contain"
+                                source={groceryBagIllustration}
+                                style={styles.illustration}
+                            />
+                            <Text
+                                accessibilityRole="header"
+                                style={styles.brand}
+                            >
+                                Shopping List
+                            </Text>
+                            <Text style={styles.tagline}>
+                                Plan, shop and share together.
+                            </Text>
+                        </View>
 
-                <Pressable
-                    style={styles.switchButton}
-                    onPress={handleToggleMode}
-                    disabled={isSubmitting || isLoading}
-                >
-                    <Text style={styles.switchButtonText}>
-                        {isRegistering
-                            ? 'Already have an account? Sign in'
-                            : 'Need an account? Register'}
-                    </Text>
-                </Pressable>
-            </View>
+                        <View style={styles.tabs}>
+                            <Button
+                                accessibilityState={{
+                                    selected: !isRegistering,
+                                }}
+                                disabled={isFormDisabled}
+                                label="Sign in"
+                                onPress={() => handleSelectMode(false)}
+                                style={[
+                                    styles.tab,
+                                    !isRegistering && styles.selectedTab,
+                                ]}
+                                textStyle={[
+                                    styles.tabText,
+                                    !isRegistering && styles.selectedTabText,
+                                ]}
+                                variant="secondary"
+                            />
+                            <Button
+                                accessibilityState={{ selected: isRegistering }}
+                                disabled={isFormDisabled}
+                                label="Register"
+                                onPress={() => handleSelectMode(true)}
+                                style={[
+                                    styles.tab,
+                                    isRegistering && styles.selectedTab,
+                                ]}
+                                textStyle={[
+                                    styles.tabText,
+                                    isRegistering && styles.selectedTabText,
+                                ]}
+                                variant="secondary"
+                            />
+                        </View>
+
+                        <View style={styles.form}>
+                            <Text
+                                accessibilityRole="header"
+                                style={styles.heading}
+                            >
+                                {isRegistering
+                                    ? 'Create account'
+                                    : 'Welcome back'}
+                            </Text>
+
+                            <TextField
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                disabled={isFormDisabled}
+                                keyboardType="email-address"
+                                label="Email"
+                                onChangeText={setEmail}
+                                placeholder="you@example.com"
+                                value={email}
+                            />
+
+                            <TextField
+                                disabled={isFormDisabled}
+                                label="Password"
+                                onChangeText={setPassword}
+                                placeholder="Your password"
+                                secureTextEntry
+                                value={password}
+                            />
+
+                            {error && (
+                                <Text
+                                    accessibilityLiveRegion="polite"
+                                    style={styles.error}
+                                >
+                                    {error}
+                                </Text>
+                            )}
+
+                            <Button
+                                disabled={isLoading}
+                                label={isRegistering ? 'Register' : 'Sign in'}
+                                loading={isSubmitting}
+                                onPress={handleSubmit}
+                                style={styles.submitButton}
+                            />
+                        </View>
+
+                        <BuildVersionLabel style={styles.buildVersion} />
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    keyboardAvoidingView: {
         flex: 1,
-        justifyContent: 'center',
-        padding: 24,
     },
-
-    title: {
-        fontSize: 28,
-        fontWeight: '600',
-        marginBottom: 4,
+    scrollView: {
+        flex: 1,
     },
-
-    buildVersion: {
-        color: '#777777',
-        fontSize: 13,
-        marginBottom: 24,
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.xl,
     },
-
-    input: {
-        borderWidth: 1,
-        borderColor: '#DDD',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        fontSize: 16,
-        marginBottom: 12,
+    content: {
+        flexGrow: 1,
     },
-
+    hero: {
+        alignItems: 'center',
+    },
+    illustration: {
+        width: '100%',
+        height: 208,
+        maxWidth: 272,
+    },
+    brand: {
+        ...typography.screenTitle,
+        color: semanticColors.content.primary,
+        textAlign: 'center',
+    },
+    tagline: {
+        ...typography.body,
+        color: semanticColors.content.secondary,
+        marginTop: spacing.xs,
+        textAlign: 'center',
+    },
+    tabs: {
+        flexDirection: 'row',
+        gap: spacing.xxs,
+        marginTop: spacing.lg,
+        padding: spacing.xxs,
+        borderRadius: radii.button,
+        backgroundColor: semanticColors.control.secondary,
+    },
+    tab: {
+        flex: 1,
+        minHeight: 44,
+        backgroundColor: 'transparent',
+    },
+    selectedTab: {
+        ...elevation.card,
+        backgroundColor: semanticColors.screen.surface,
+        shadowColor: semanticColors.content.primary,
+    },
+    tabText: {
+        color: semanticColors.control.primary,
+    },
+    selectedTabText: {
+        color: semanticColors.control.secondaryText,
+    },
+    form: {
+        gap: spacing.md,
+        marginTop: spacing.sm,
+    },
+    heading: {
+        ...typography.dialogTitle,
+        color: semanticColors.content.primary,
+        marginTop: spacing.xs,
+    },
     error: {
-        color: '#D32F2F',
-        marginBottom: 16,
+        ...typography.supporting,
+        color: semanticColors.feedback.error,
     },
-
     submitButton: {
-        paddingVertical: 14,
-        borderRadius: 8,
-        backgroundColor: '#208AEF',
-        alignItems: 'center',
+        width: '100%',
+        marginTop: spacing.xs,
     },
-
-    disabledButton: {
-        opacity: 0.5,
-    },
-
-    submitButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-
-    switchButton: {
-        alignItems: 'center',
-        marginTop: 20,
-    },
-
-    switchButtonText: {
-        color: '#208AEF',
-        fontSize: 16,
+    buildVersion: {
+        ...typography.caption,
+        alignSelf: 'center',
+        color: semanticColors.content.muted,
+        marginTop: 'auto',
+        paddingTop: spacing.xl,
     },
 });

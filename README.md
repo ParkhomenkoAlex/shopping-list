@@ -60,11 +60,23 @@ supabase start
 pnpm db:status
 pnpm db:migration:new <name>
 pnpm db:migration:up
+pnpm db:migration:list
 pnpm db:types
+pnpm db:test:local
+pnpm db:seed:local
 ```
 
-Review migrations and RLS changes. Do not apply cloud changes from local commands
-by accident; use an explicitly dispatched workflow.
+`db:migration:up`, `db:migration:list`, `db:test:local` and `db:seed:local` are
+explicitly Local-only commands. The seed command only accepts the Local API on
+`127.0.0.1`, `localhost`, or Android emulator alias `10.0.2.2` port `54321`; it
+is idempotent and does not update existing rows or passwords.
+
+Use `supabase migration up --local` for routine Local migrations. Do not run
+`supabase db reset` without explicit owner approval. Never reset Development or
+Production. Remote migrations require explicit owner approval, target and
+migration-history verification, SQL review, and a current recoverable backup;
+Production also requires a verified recovery plan. SQL/RLS tests and seed data
+must stay on Local or an isolated test database.
 
 ## Android APKs
 
@@ -114,6 +126,12 @@ is required before the deployment job can use `--yes` to apply migrations. The
 same Environment also protects the read-only plan job because it supplies the
 environment-scoped credentials, so reviewers approve twice by design: first to
 generate the preflight artifact, then to deploy the unchanged normalized plan.
+
+Both Cloud Safety hotfix PRs are merged. A Development backup was created on
+2026-11-27, but an isolated restore test is blocked because its managed Auth
+schema includes columns unavailable in the tested Local Supabase image. Cloud
+deployment and removal of older credentials remain deferred until a compatible
+restore is verified and owner approval is given.
 
 The authenticated client registers an Expo push token after permission approval.
 `notify-list-members` sends notifications, and a notification tap routes to
