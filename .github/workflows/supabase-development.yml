@@ -34,6 +34,7 @@ jobs:
         env:
             SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
             SUPABASE_EXPECTED_PROJECT_REF: ${{ vars.SUPABASE_EXPECTED_PROJECT_REF }}
+            SUPABASE_POOLER_DB_URL: ${{ secrets.SUPABASE_DEV_POOLER_DB_URL }}
             SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
         steps:
@@ -59,6 +60,49 @@ jobs:
                       echo "::error::Development target does not match the approved project ref."
                       exit 1
                   fi
+                  if [ -z "$SUPABASE_POOLER_DB_URL" ]; then
+                      echo "::error::SUPABASE_DEV_POOLER_DB_URL is not configured."
+                      exit 1
+                  fi
+                  if ! python3 - <<'PY'
+                  import os
+                  from urllib.parse import parse_qs, unquote, urlparse
+
+                  expected_ref = os.environ["SUPABASE_EXPECTED_PROJECT_REF"]
+                  pooler_url = os.environ["SUPABASE_POOLER_DB_URL"]
+                  try:
+                      parsed = urlparse(pooler_url)
+                      port = parsed.port
+                  except ValueError:
+                      raise SystemExit(1)
+                  password = parsed.password or ""
+                  values_to_mask = {pooler_url, password}
+                  decoded_password = password
+                  for _ in range(3):
+                      decoded_password = unquote(decoded_password)
+                      if decoded_password in values_to_mask:
+                          break
+                      values_to_mask.add(decoded_password)
+                  for value in values_to_mask:
+                      if value:
+                          print(f"::add-mask::{value}")
+                  sslmode = parse_qs(parsed.query).get("sslmode", [""])[0].lower()
+                  valid = (
+                      parsed.scheme in {"postgres", "postgresql"}
+                      and parsed.username == f"postgres.{expected_ref}"
+                      and parsed.password is not None
+                      and parsed.hostname is not None
+                      and parsed.hostname.endswith(".pooler.supabase.com")
+                      and port == 5432
+                      and parsed.path == "/postgres"
+                      and sslmode in {"require", "verify-ca", "verify-full"}
+                  )
+                  raise SystemExit(0 if valid else 1)
+                  PY
+                  then
+                      echo "::error::Development pooler URL does not match the approved Session pooler target."
+                      exit 1
+                  fi
 
             - name: Record migration history and dry-run plan
               run: |
@@ -72,7 +116,7 @@ jobs:
                       exit 1
                   }
 
-                  if ! supabase migration list --remote="$SUPABASE_PROJECT_REF" \
+                  if ! supabase migration list --remote="$SUPABASE_POOLER_DB_URL" \
                       > deployment-preflight/migration-history.txt 2>&1; then
                       fail_preflight "Unable to read remote migration history."
                   fi
@@ -129,7 +173,7 @@ jobs:
                           > deployment-preflight/migration-history.diff || true
                       fail_preflight "Normalized migration history does not match local migration files."
                   fi
-                  if ! supabase db push --remote="$SUPABASE_PROJECT_REF" --dry-run --yes \
+                  if ! supabase db push --remote="$SUPABASE_POOLER_DB_URL" --dry-run --yes \
                       > deployment-preflight/migration-plan.txt 2>&1; then
                       fail_preflight "Supabase dry-run failed."
                   fi
@@ -160,6 +204,7 @@ jobs:
                   import os
                   import re
                   import shutil
+                  from urllib.parse import unquote, urlparse
                   from pathlib import Path
 
                   source = Path("deployment-preflight")
@@ -168,15 +213,24 @@ jobs:
                       shutil.rmtree(destination)
                   destination.mkdir()
 
-                  secrets = {
-                      value
-                      for name, value in os.environ.items()
-                      if value
-                      and any(
+                  secrets = set()
+                  for name, value in os.environ.items():
+                      if not value or not any(
                           marker in name
-                          for marker in ("TOKEN", "PASSWORD", "SECRET", "DATABASE_URL")
-                      )
-                  }
+                          for marker in ("TOKEN", "PASSWORD", "SECRET", "DATABASE_URL", "DB_URL")
+                      ):
+                          continue
+                      secrets.add(value)
+                      if name.endswith("DB_URL") or "DATABASE_URL" in name:
+                          password = urlparse(value).password or ""
+                          for _ in range(3):
+                              if not password:
+                                  break
+                              secrets.add(password)
+                              decoded_password = unquote(password)
+                              if decoded_password == password:
+                                  break
+                              password = decoded_password
                   patterns = (
                       (re.compile(r"(?i)(authorization:\\s*bearer\\s+)\\S+"), r"\\1[REDACTED]"),
                       (re.compile(r"(?i)(postgres(?:ql)?://)[^\\s'\\\"]+"), r"\\1[REDACTED]"),
@@ -229,6 +283,7 @@ jobs:
         env:
             SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
             SUPABASE_EXPECTED_PROJECT_REF: ${{ vars.SUPABASE_EXPECTED_PROJECT_REF }}
+            SUPABASE_POOLER_DB_URL: ${{ secrets.SUPABASE_DEV_POOLER_DB_URL }}
             SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
         steps:
@@ -283,7 +338,50 @@ jobs:
                       echo "::error::Development target does not match the approved project ref."
                       exit 1
                   fi
-                  supabase migration list --remote="$SUPABASE_PROJECT_REF" \
+                  if [ -z "$SUPABASE_POOLER_DB_URL" ]; then
+                      echo "::error::SUPABASE_DEV_POOLER_DB_URL is not configured."
+                      exit 1
+                  fi
+                  if ! python3 - <<'PY'
+                  import os
+                  from urllib.parse import parse_qs, unquote, urlparse
+
+                  expected_ref = os.environ["SUPABASE_EXPECTED_PROJECT_REF"]
+                  pooler_url = os.environ["SUPABASE_POOLER_DB_URL"]
+                  try:
+                      parsed = urlparse(pooler_url)
+                      port = parsed.port
+                  except ValueError:
+                      raise SystemExit(1)
+                  password = parsed.password or ""
+                  values_to_mask = {pooler_url, password}
+                  decoded_password = password
+                  for _ in range(3):
+                      decoded_password = unquote(decoded_password)
+                      if decoded_password in values_to_mask:
+                          break
+                      values_to_mask.add(decoded_password)
+                  for value in values_to_mask:
+                      if value:
+                          print(f"::add-mask::{value}")
+                  sslmode = parse_qs(parsed.query).get("sslmode", [""])[0].lower()
+                  valid = (
+                      parsed.scheme in {"postgres", "postgresql"}
+                      and parsed.username == f"postgres.{expected_ref}"
+                      and parsed.password is not None
+                      and parsed.hostname is not None
+                      and parsed.hostname.endswith(".pooler.supabase.com")
+                      and port == 5432
+                      and parsed.path == "/postgres"
+                      and sslmode in {"require", "verify-ca", "verify-full"}
+                  )
+                  raise SystemExit(0 if valid else 1)
+                  PY
+                  then
+                      echo "::error::Development pooler URL does not match the approved Session pooler target."
+                      exit 1
+                  fi
+                  supabase migration list --remote="$SUPABASE_POOLER_DB_URL" \
                       > deployment-preflight-recheck/migration-history.txt 2>&1
                   find supabase/migrations -maxdepth 1 -type f -name '*.sql' \
                       -printf '%f\n' | sed -n 's/^\([0-9]\{14\}\)_.*/\1/p' | sort -u \
@@ -327,7 +425,7 @@ jobs:
                   test -s deployment-preflight-recheck/migration-history.normalized.txt
                   cmp --silent deployment-preflight-recheck/local-migrations.txt \
                       deployment-preflight-recheck/parsed-local-migrations.txt
-                  supabase db push --remote="$SUPABASE_PROJECT_REF" --dry-run --yes \
+                  supabase db push --remote="$SUPABASE_POOLER_DB_URL" --dry-run --yes \
                       > deployment-preflight-recheck/migration-plan.txt 2>&1
                   while IFS= read -r version; do
                       if grep -Fq "$version" deployment-preflight-recheck/migration-plan.txt; then
@@ -353,6 +451,7 @@ jobs:
                   import os
                   import re
                   import shutil
+                  from urllib.parse import unquote, urlparse
                   from pathlib import Path
 
                   source = Path("deployment-preflight-recheck")
@@ -361,15 +460,24 @@ jobs:
                       shutil.rmtree(destination)
                   destination.mkdir()
 
-                  secrets = {
-                      value
-                      for name, value in os.environ.items()
-                      if value
-                      and any(
+                  secrets = set()
+                  for name, value in os.environ.items():
+                      if not value or not any(
                           marker in name
-                          for marker in ("TOKEN", "PASSWORD", "SECRET", "DATABASE_URL")
-                      )
-                  }
+                          for marker in ("TOKEN", "PASSWORD", "SECRET", "DATABASE_URL", "DB_URL")
+                      ):
+                          continue
+                      secrets.add(value)
+                      if name.endswith("DB_URL") or "DATABASE_URL" in name:
+                          password = urlparse(value).password or ""
+                          for _ in range(3):
+                              if not password:
+                                  break
+                              secrets.add(password)
+                              decoded_password = unquote(password)
+                              if decoded_password == password:
+                                  break
+                              password = decoded_password
                   patterns = (
                       (re.compile(r"(?i)(authorization:\\s*bearer\\s+)\\S+"), r"\\1[REDACTED]"),
                       (re.compile(r"(?i)(postgres(?:ql)?://)[^\\s'\\\"]+"), r"\\1[REDACTED]"),
@@ -415,7 +523,7 @@ jobs:
                   retention-days: 30
 
             - name: Push migrations to Development
-              run: supabase db push --remote="$SUPABASE_PROJECT_REF" --yes
+              run: supabase db push --remote="$SUPABASE_POOLER_DB_URL" --yes
 
             - name: Deploy Edge Functions to Development
               run: |
