@@ -22,10 +22,13 @@ type ListsHeaderProps = {
 };
 
 function getGreeting(hour: number) {
-    if (hour >= 5 && hour < 12) return 'Good morning';
-    if (hour >= 12 && hour < 17) return 'Good afternoon';
-    if (hour >= 17 && hour < 22) return 'Good evening';
-    return 'Good night';
+    if (hour >= 5 && hour < 12)
+        return { text: 'Good morning', key: 'greeting-morning' } as const;
+    if (hour >= 12 && hour < 17)
+        return { text: 'Good afternoon', key: 'greeting-day' } as const;
+    if (hour >= 17 && hour < 22)
+        return { text: 'Good evening', key: 'greeting-evening' } as const;
+    return { text: 'Good night', key: 'greeting-night' } as const;
 }
 
 export function ListsHeader({ email, onPressAccount }: ListsHeaderProps) {
@@ -47,6 +50,7 @@ export function ListsHeader({ email, onPressAccount }: ListsHeaderProps) {
         <View style={styles.container}>
             <Illustration
                 accessibilityLabel="Greeting illustration"
+                illustrationKey={greeting.key}
                 style={styles.illustration}
             />
             <Text
@@ -54,7 +58,7 @@ export function ListsHeader({ email, onPressAccount }: ListsHeaderProps) {
                 numberOfLines={1}
                 style={styles.greeting}
             >
-                {greeting}
+                {greeting.text}
             </Text>
             <Pressable
                 ref={avatarRef}
@@ -74,16 +78,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-        marginBottom: spacing.xl,
+        marginBottom: spacing.sm,
     },
     illustration: {
-        width: 40,
-        height: 40,
+        width: 48,
+        height: 48,
     },
     greeting: {
-        ...typography.screenTitle,
+        ...typography.sheetTitle,
         color: semanticColors.content.primary,
         flex: 1,
+        fontWeight: '600',
     },
     avatar: {
         width: controlDimensions.touchTarget,

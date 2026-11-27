@@ -1,22 +1,31 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useNetInfo } from '@react-native-community/netinfo';
 
 import { AccountMenu } from '@/components/lists/AccountMenu';
 import { CreateList } from '@/components/lists/CreateList';
+import { CreateListModal } from '@/components/lists/CreateListModal';
 import { ListCard } from '@/components/lists/ListCard';
 import { ListFilters, type ListFilter } from '@/components/lists/ListFilters';
+import { ListsLoadingSkeleton } from '@/components/lists/ListsLoadingSkeleton';
 import {
     ListsHeader,
     type AccountMenuAnchor,
 } from '@/components/lists/ListsHeader';
 import { ListsStatePanel } from '@/components/lists/ListsStatePanel';
+import { ShoppingProgress } from '@/components/lists/ShoppingProgress';
 import { Screen } from '@/components/ui/Screen';
 import { useList } from '@/hooks/useList';
 import { useAuth } from '@/providers/AuthProvider';
 import { semanticColors } from '@/theme/semantic';
 import { radii, spacing, typography } from '@/theme/tokens';
+import type { CreateListForm } from '@/types/CreateListForm';
+
+const initialCreateListForm: CreateListForm = {
+    name: '',
+    description: '',
+};
 
 export default function ListsScreen() {
     const {
@@ -37,7 +46,13 @@ export default function ListsScreen() {
         useState<ListFilter>('all');
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [signOutError, setSignOutError] = useState<string | null>(null);
+    const [isCreateListModalVisible, setIsCreateListModalVisible] =
+        useState(false);
+    const [createListForm, setCreateListForm] = useState<CreateListForm>(
+        initialCreateListForm
+    );
     const isSigningOutRef = useRef(false);
+    const isSubmittingCreateListRef = useRef(false);
     const pendingListNavigationIdsRef = useRef<Set<string>>(new Set());
     const netInfo = useNetInfo();
     const isOffline =
@@ -54,6 +69,12 @@ export default function ListsScreen() {
 
         return lists.filter((list) => list.membership_role === expectedRole);
     }, [lists, selectedListFilter]);
+    const showEmptyCreateCallToAction =
+        hasListsData &&
+        visibleLists.length === 0 &&
+        selectedListFilter !== 'shared' &&
+        !listsError &&
+        !isOffline;
 
     useFocusEffect(
         useCallback(() => {
@@ -71,6 +92,48 @@ export default function ListsScreen() {
             pathname: '/lists/[id]',
             params: { id: listId },
         });
+    };
+
+    const handleCreateListFormChange = <K extends keyof CreateListForm>(
+        field: K,
+        value: CreateListForm[K]
+    ) => {
+        setCreateListForm((currentForm) => ({
+            ...currentForm,
+            [field]: value,
+        }));
+    };
+
+    const handleOpenCreateListModal = () => {
+        setIsCreateListModalVisible(true);
+    };
+
+    const handleCancelCreateList = () => {
+        setCreateListForm(initialCreateListForm);
+        setIsCreateListModalVisible(false);
+    };
+
+    const handleSubmitCreateList = async () => {
+        const name = createListForm.name.trim();
+        const description = createListForm.description.trim();
+
+        if (!name || isCreating || isSubmittingCreateListRef.current) {
+            return;
+        }
+
+        isSubmittingCreateListRef.current = true;
+
+        try {
+            await createList({
+                name,
+                description: description || null,
+            });
+            handleCancelCreateList();
+        } catch (error) {
+            console.error('Failed to create list:', error);
+        } finally {
+            isSubmittingCreateListRef.current = false;
+        }
     };
 
     const handleSignOut = async () => {
@@ -108,14 +171,7 @@ export default function ListsScreen() {
                 }}
             />
 
-            {isInitialLoading && !isOffline && (
-                <View accessibilityLiveRegion="polite" style={styles.loading}>
-                    <ActivityIndicator
-                        accessibilityLabel="Loading lists"
-                        color={semanticColors.control.primary}
-                    />
-                </View>
-            )}
+            {isInitialLoading && !isOffline && <ListsLoadingSkeleton />}
 
             {isOffline && !hasListsData && (
                 <ListsStatePanel
@@ -159,14 +215,14 @@ export default function ListsScreen() {
                     onSelect={setSelectedListFilter}
                 />
                 <CreateList
-                    createError={createError}
-                    createList={createList}
                     isCreating={isCreating}
+                    onPress={handleOpenCreateListModal}
                 />
             </View>
 
             {hasListsData && visibleLists.length > 0 && (
                 <View>
+                    <ShoppingProgress lists={visibleLists} />
                     {visibleLists.map((list) => (
                         <ListCard
                             key={list.id}
@@ -181,23 +237,32 @@ export default function ListsScreen() {
                 visibleLists.length === 0 &&
                 !listsError &&
                 !isOffline && (
-                    <ListsStatePanel
-                        description={
-                            selectedListFilter === 'shared'
-                                ? 'Lists shared with you will appear here.'
-                                : 'Create your first shopping list.'
-                        }
-                        illustrationKey={
-                            selectedListFilter === 'shared'
-                                ? 'no-shared-lists'
-                                : 'no-lists'
-                        }
-                        title={
-                            selectedListFilter === 'shared'
-                                ? 'Better together.'
-                                : 'Every shop starts with a list.'
-                        }
-                    />
+                    <View>
+                        <ListsStatePanel
+                            description={
+                                selectedListFilter === 'shared'
+                                    ? 'Lists shared with you will appear here.'
+                                    : 'Create your first shopping list.'
+                            }
+                            illustrationKey={
+                                selectedListFilter === 'shared'
+                                    ? 'no-shared-lists'
+                                    : 'no-lists'
+                            }
+                            title={
+                                selectedListFilter === 'shared'
+                                    ? 'Better together.'
+                                    : 'Every shop starts with a list.'
+                            }
+                        />
+                        {showEmptyCreateCallToAction && (
+                            <CreateList
+                                isCreating={isCreating}
+                                onPress={handleOpenCreateListModal}
+                                variant="inline"
+                            />
+                        )}
+                    </View>
                 )}
 
             {signOutError && (
@@ -217,6 +282,15 @@ export default function ListsScreen() {
                 onSignOut={() => void handleSignOut()}
                 visible={isAccountMenuVisible}
             />
+            <CreateListModal
+                error={createError}
+                form={createListForm}
+                isCreating={isCreating}
+                onCancel={handleCancelCreateList}
+                onChange={handleCreateListFormChange}
+                onSubmit={handleSubmitCreateList}
+                visible={isCreateListModalVisible}
+            />
         </Screen>
     );
 }
@@ -225,11 +299,6 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         padding: spacing.lg,
-    },
-    loading: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 180,
     },
     refreshError: {
         borderRadius: radii.control,
@@ -241,7 +310,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-        marginTop: spacing.md,
+        marginTop: spacing.xs,
         marginBottom: spacing.md,
     },
     refreshErrorText: {

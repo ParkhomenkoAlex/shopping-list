@@ -94,13 +94,13 @@ notification delivery without evidence.
 
 ### Remaining dependency-aware stages
 
-- [ ] **R4 Friendly Edition assets and design system — active:** 21 approved
-      PNGs are imported through the typed static `src/theme/illustrations.ts`
-      catalog: ten semantic Clean/Cozy pairs plus one shared `no-image.png`
-      fallback. A temporary global Clean/Cozy setting uses existing local
-      storage only and defaults to Cozy. The authentication illustration remains
-      unchanged. Category and greeting art is not yet available and therefore
-      uses the common fallback. Final visual owner review remains required.
+- [ ] **R4 Friendly Edition assets and design system — active:** two independent
+      static illustration sets (`basket` and `meerkat`) are imported through the
+      typed `src/theme/illustrations.ts` catalog. Each semantic state supports
+      Clean and Cozy variants; list icons are set-specific, while `no-image.png`
+      remains the shared fallback. The temporary global Clean/Cozy setting uses
+      existing local storage only and defaults to Cozy. The authentication
+      illustration remains unchanged. Final visual owner review remains required.
 - [ ] **R5 List appearance and statistics data layer — implementation pending
       owner review:** migration `20261127120000` persists `icon_key` and
       `color_key` with groceries/indigo defaults and CHECK constraints for the
@@ -121,17 +121,23 @@ notification delivery without evidence.
       offline, and reconnect behavior. Development deployment remains pending;
       owner review remains required before completion. Keep data/API and UI
       commits separate.
-- [ ] **R6 Main screen — partial first visual slice:** implemented dynamic
-      greeting, account popup with temporary Clean/Cozy selector and existing
-      logout, circular New list action, All/Mine/Shared filters backed by one
-      authorized aggregate summary query, friendly fallback cards, and illustrated
-      no-lists/no-shared-lists/error/offline states. Progress banner remains
-      deferred until R5 provides authorized statistics data. Preserve existing
-      navigation guards and functionality. Pixel 8 manual review recorded 19
-      passing cases and no failures; this includes Account menu retest,
-      OfflineBanner disappearance, selected-filter persistence, filtering,
-      offline and reconnect. The membership-refetch error was not reproduced at
-      runtime. Offline cold start remains blocked until Release APK verification.
+- [ ] **R6 Main screen — implementation pending owner review:** dynamic greeting,
+      account popup with temporary Clean/Cozy selector and existing logout,
+      circular New list action, and All/Mine/Shared filters use the authorized
+      aggregate summary query. Cards use real R5 item statistics, exact-count
+      completion, per-list progress, neutral shared-with-you indicators and the
+      active illustration set. Shopping Progress uses selected-filter list
+      completion, counts empty lists, has a neutral all-empty treatment and is
+      hidden when no lists are visible. Empty All/Mine provides the existing
+      Create List flow; both triggers use one modal state and submit guard.
+      Illustrated no-lists/no-shared-lists/error/offline states retain cached-data
+      behavior and existing navigation guards. R5 cannot identify owned lists
+      shared with other users without an additional authorized aggregate. Pixel 8
+      manual review recorded 19 passing cases and no failures; this includes
+      Account menu retest, OfflineBanner disappearance, selected-filter
+      persistence, filtering, offline and reconnect. The membership-refetch
+      error was not reproduced at runtime. Offline cold start remains blocked
+      until Release APK verification.
 - [ ] **R7 List Details and items UI:** update header/action placement, item
       progress banner, friendly rows, Quick Add and completed section while
       retaining item CRUD and reliability behavior. Do not invent unsupported
@@ -197,6 +203,10 @@ but never override the approved prototype.
   Auth schema in the tested Local Supabase image. Cloud deployment and removal
   of older credentials remain deferred pending a compatible restore verification
   and owner approval.
+- R6 device verification still needs initial and background error-state coverage.
+  Owned lists that are shared with others have no indicator until an authorized
+  collaborator aggregate is added to the R5 contract. PNG optimization remains
+  deferred; do not change approved artwork without review.
 - The English fallback sender `user.email || 'Member'` is source-verified; its
   missing-email runtime scenario remains a non-blocking verification item.
 

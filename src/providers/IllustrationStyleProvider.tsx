@@ -7,11 +7,14 @@ import {
     type ReactNode,
 } from 'react';
 
-import type { IllustrationStyle } from '@/theme/illustrations';
+import type { IllustrationSet, IllustrationStyle } from '@/theme/illustrations';
 
+const ILLUSTRATION_SET_STORAGE_KEY = 'shopping-list:illustration-set';
 const ILLUSTRATION_STYLE_STORAGE_KEY = 'shopping-list:illustration-style';
 
 type IllustrationStyleContextValue = {
+    illustrationSet: IllustrationSet;
+    setIllustrationSet: (set: IllustrationSet) => void;
     illustrationStyle: IllustrationStyle;
     setIllustrationStyle: (style: IllustrationStyle) => void;
 };
@@ -25,6 +28,17 @@ export function IllustrationStyleProvider({
 }: {
     children: ReactNode;
 }) {
+    const [illustrationSet, setSet] = useState<IllustrationSet>(() => {
+        return localStorage.getItem(ILLUSTRATION_SET_STORAGE_KEY) === 'meerkat'
+            ? 'meerkat'
+            : 'basket';
+    });
+
+    const setIllustrationSet = useCallback((set: IllustrationSet) => {
+        setSet(set);
+        localStorage.setItem(ILLUSTRATION_SET_STORAGE_KEY, set);
+    }, []);
+
     const [illustrationStyle, setStyle] = useState<IllustrationStyle>(() => {
         const storedStyle = localStorage.getItem(
             ILLUSTRATION_STYLE_STORAGE_KEY
@@ -44,7 +58,12 @@ export function IllustrationStyleProvider({
 
     return (
         <IllustrationStyleContext.Provider
-            value={{ illustrationStyle, setIllustrationStyle }}
+            value={{
+                illustrationSet,
+                setIllustrationSet,
+                illustrationStyle,
+                setIllustrationStyle,
+            }}
         >
             {children}
         </IllustrationStyleContext.Provider>

@@ -41,27 +41,29 @@ Focused, disabled and error controls retain stable geometry.
 
 ## Friendly Edition illustrations
 
-Friendly Edition uses locally bundled, transparent-background Cozy Miniatures:
-cute expressive characters with appropriate eyes, smiles and emotions. Assets
-share a consistent perspective, lighting, material treatment and proportions.
-The approved bundled authentication grocery-bag illustration remains unchanged.
+Friendly Edition uses two independent locally bundled illustration sets:
+`basket` and `meerkat`. Each set has its own transparent-background assets and
+supports Clean and Cozy variants for the same semantic state keys. The approved
+bundled authentication grocery-bag illustration remains unchanged.
 
-The imported catalog contains 21 PNGs: a shared `no-image.png` fallback and
-Clean/Cozy variants for ten semantic keys. `src/theme/illustrations.ts` owns
-the static Metro-compatible imports and maps these keys to the active style:
+`src/theme/illustrations.ts` owns the static Metro-compatible imports and maps
+semantic keys to the active set and Clean/Cozy style:
 
-| Group              | Semantic keys                                                |
-| ------------------ | ------------------------------------------------------------ |
-| Empty states       | no-items, no-lists, no-shared-lists                          |
-| Shopping progress  | basket-empty, basket-partial, basket-filled, basket-complete |
-| Reliability states | error, offline, unavailable                                  |
+| Group              | Semantic keys                                                    |
+| ------------------ | ---------------------------------------------------------------- |
+| Empty states       | no-items, no-lists, no-shared-lists                              |
+| Shopping progress  | basket-empty, basket-partial, basket-filled, basket-complete     |
+| Reliability states | error, offline, unavailable                                      |
+| Greetings          | greeting-morning, greeting-day, greeting-evening, greeting-night |
+| List icons         | Eight stable `listAppearance` icon keys, mapped per set          |
 
-List category and time-of-day assets are not yet supplied. Category cards and
-greetings use the shared fallback without duplicating it. The temporary global
-Clean/Cozy selection is persisted only locally through Expo SQLite
-`localStorage`; it has no Supabase, navigation, authentication or query-cache
-effect and can be removed once one approved style is selected. Prototype SVGs
-remain placeholders and must not be shipped as the final asset set.
+List icon and time-of-day greeting assets are set-specific. `no-image.png` is
+the shared fallback when no semantic key is available; it is not duplicated.
+The temporary global Clean/Cozy selection is persisted only locally through
+Expo SQLite `localStorage`; it has no Supabase, navigation, authentication or
+query-cache effect and can be removed once one approved style is selected.
+Prototype SVGs remain placeholders and must not be shipped as the final asset
+set.
 
 src/theme/listAppearance.ts owns the eight stable icon keys and eight semantic
 colors: indigo, blue, green, teal, purple, pink, amber, gray. `icon_key` and
@@ -72,16 +74,16 @@ Illustration choice and color choice are independent.
 
 ## Component conventions
 
-| Component                | Friendly Edition convention                                                                                                                                                                           |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Header                   | One visible owner per route; no technical labels or duplicate Back controls.                                                                                                                          |
-| Avatar and account popup | Email initial. Anchored overlay shows email, build/version and Log out; it does not resize content, dismisses on outside press or Android Back, and needs no logout confirmation.                     |
-| Segments                 | Indigo-tint container, white selected surface and selected accessibility state.                                                                                                                       |
-| List card                | Friendly white rounded card, larger category illustration, title and chevron. Add independent tint, counts, rounded percentage, progress and shared indicator only after R5 supplies authorized data. |
-| Progress                 | Incomplete bars use common Indigo regardless of list appearance; completed bars use success color and a clear completion indicator.                                                                   |
-| Item row                 | Compact completion control, name, optional quantity/unit badge and optional note; edit/delete remain accessible.                                                                                      |
-| Modal and picker         | Centered create/edit and Sharing modals; eight icon choices, eight independent colors and a live card preview.                                                                                        |
-| States                   | Skeleton initial loading, illustrated empty states, Retry initial errors, non-blocking refresh error when cached data exists, dedicated no-cache offline state.                                       |
+| Component                | Friendly Edition convention                                                                                                                                                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header                   | One visible owner per route; no technical labels or duplicate Back controls.                                                                                                                                                                                                                    |
+| Avatar and account popup | Email initial. Anchored overlay shows email, build/version and Log out; it does not resize content, dismisses on outside press or Android Back, and needs no logout confirmation.                                                                                                               |
+| Segments                 | Indigo-tint container, white selected surface and selected accessibility state.                                                                                                                                                                                                                 |
+| List card                | Friendly white rounded card, set-specific category illustration, title and chevron. R5 statistics provide counts and progress; exact counts determine completion, with incomplete rounded progress capped at 99%. The neutral shared indicator denotes lists shared with the current user only. |
+| Progress                 | Incomplete bars use common Indigo regardless of list appearance; completed bars use success color and a clear completion indicator.                                                                                                                                                             |
+| Item row                 | Compact completion control, name, optional quantity/unit badge and optional note; edit/delete remain accessible.                                                                                                                                                                                |
+| Modal and picker         | Centered create/edit and Sharing modals; eight icon choices, eight independent colors and a live card preview.                                                                                                                                                                                  |
+| States                   | Skeleton initial loading, illustrated empty states, Retry initial errors, non-blocking refresh error when cached data exists, dedicated no-cache offline state.                                                                                                                                 |
 
 Use native Pressable, Modal, Image, TextInput, ScrollView and virtualized lists
 where appropriate. Do not introduce a UI library or abstraction before its first
@@ -100,10 +102,10 @@ Back behavior. Do not introduce unrelated dependencies or abstractions.
 
 ### Main screen
 
-The first implemented slice shows a local-time greeting, shared fallback
-illustration, email-initial avatar, anchored account menu, circular New list
-action, and illustrated initial empty/error/offline states. Do not add a
-redundant Shopping List/My Lists title, search field or bottom navigation.
+The implemented My Lists slice shows a local-time greeting, set-specific
+greeting illustration, email-initial avatar, anchored account menu, circular
+New list action, and illustrated initial empty/error/offline states. Do not add
+a redundant Shopping List/My Lists title, search field or bottom navigation.
 
 All / Mine / Shared is implemented with one authorized `list_members` query
 for the current user's role; it does not use per-list requests. The
@@ -120,12 +122,13 @@ only if it has at least one item and every item is complete. Empty lists remain
 visible but are excluded from aggregation. Hide the progress banner and show the
 appropriate empty state when the selected filter has no lists. When it has lists
 but all are empty, show neither an artificial completion percentage nor a
-success state. Derive progress from current data, synchronize authorized
-shared-list changes, and automatically reopen a completed list when an
-incomplete item is added or a completed item is unchecked. Keep available data
-visible during background refresh and round percentages consistently. Basket
-artwork is empty at 0%, partial at 1–49%, filled at 50–99%, and complete with
-success treatment at 100%.
+success state, and state the empty-list count. Derive progress from current
+data, synchronize authorized shared-list changes, and automatically reopen a
+completed list when an incomplete item is added or a completed item is
+unchecked. Keep available data visible during background refresh. Exact counts,
+not rounded percentages, determine completion; incomplete rounded values are
+capped at 99%. Basket artwork is empty at 0%, partial at 1–49%, filled at
+50–99%, and complete with success treatment at 100%.
 
 ### List details and forms
 

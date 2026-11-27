@@ -24,7 +24,12 @@ export function AccountMenu({
     onClose,
     onSignOut,
 }: AccountMenuProps) {
-    const { illustrationStyle, setIllustrationStyle } = useIllustrationStyle();
+    const {
+        illustrationSet,
+        setIllustrationSet,
+        illustrationStyle,
+        setIllustrationStyle,
+    } = useIllustrationStyle();
 
     return (
         <Modal
@@ -53,6 +58,39 @@ export function AccountMenu({
                         {email ?? 'Member'}
                     </Text>
                     <BuildVersionLabel style={styles.version} />
+
+                    <Text style={styles.label}>Illustration set</Text>
+                    <View style={styles.segments}>
+                        {(['basket', 'meerkat'] as const).map((set) => {
+                            const selected = set === illustrationSet;
+                            const label =
+                                set === 'basket' ? 'Basket' : 'Meerkat';
+
+                            return (
+                                <Pressable
+                                    key={set}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`${label} illustration set`}
+                                    accessibilityState={{ selected }}
+                                    onPress={() => setIllustrationSet(set)}
+                                    style={[
+                                        styles.segment,
+                                        selected && styles.selectedSegment,
+                                    ]}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.segmentText,
+                                            selected &&
+                                                styles.selectedSegmentText,
+                                        ]}
+                                    >
+                                        {label}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
 
                     <Text style={styles.label}>Illustration style</Text>
                     <View style={styles.segments}>
