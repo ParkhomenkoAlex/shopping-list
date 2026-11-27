@@ -47,19 +47,39 @@ jobs:
 
             - name: Validate Development target
               run: |
-                  test -n "$SUPABASE_PROJECT_REF"
-                  test -n "$SUPABASE_EXPECTED_PROJECT_REF"
-                  test "$SUPABASE_PROJECT_REF" = "$SUPABASE_EXPECTED_PROJECT_REF"
+                  if [ -z "$SUPABASE_PROJECT_REF" ]; then
+                      echo "::error::SUPABASE_DEV_PROJECT_REF is not configured."
+                      exit 1
+                  fi
+                  if [ -z "$SUPABASE_EXPECTED_PROJECT_REF" ]; then
+                      echo "::error::SUPABASE_EXPECTED_PROJECT_REF is not configured."
+                      exit 1
+                  fi
+                  if [ "$SUPABASE_PROJECT_REF" != "$SUPABASE_EXPECTED_PROJECT_REF" ]; then
+                      echo "::error::Development target does not match the approved project ref."
+                      exit 1
+                  fi
 
             - name: Record migration history and dry-run plan
               run: |
+                  set -uo pipefail
                   mkdir -p deployment-preflight
-                  supabase migration list --remote="$SUPABASE_PROJECT_REF" \
-                      > deployment-preflight/migration-history.txt 2>&1
+                  trap 'echo "Failure: preflight command failed at line $LINENO." >> deployment-preflight/diagnostics.txt; echo "::error::Development migration preflight failed. See the migration preflight artifact."' ERR
+
+                  fail_preflight() {
+                      echo "Failure: $1" >> deployment-preflight/diagnostics.txt
+                      echo "::error::$1 See the migration preflight artifact."
+                      exit 1
+                  }
+
+                  if ! supabase migration list --remote="$SUPABASE_PROJECT_REF" \
+                      > deployment-preflight/migration-history.txt 2>&1; then
+                      fail_preflight "Unable to read remote migration history."
+                  fi
                   find supabase/migrations -maxdepth 1 -type f -name '*.sql' \
                       -printf '%f\n' | sed -n 's/^\([0-9]\{14\}\)_.*/\1/p' | sort -u \
                       > deployment-preflight/local-migrations.txt
-                  awk -F '[│|]' '
+                  if ! awk -F '[│|]' '
                       function version(value) {
                           gsub(/[^0-9]/, "", value)
                           return value
@@ -87,19 +107,32 @@ jobs:
                       }
                       END { exit invalid }
                   ' deployment-preflight/migration-history.txt \
-                      > deployment-preflight/migration-history.normalized.txt
+                      > deployment-preflight/migration-history.normalized.txt; then
+                      fail_preflight "Remote migration history contains a remote-only migration or a history gap."
+                  fi
                   sed -n 's/^pending //p' \
                       deployment-preflight/migration-history.normalized.txt \
                       > deployment-preflight/pending-migrations.txt
                   sed -n 's/^[a-z]* //p' \
                       deployment-preflight/migration-history.normalized.txt \
                       > deployment-preflight/parsed-local-migrations.txt
-                  test -s deployment-preflight/local-migrations.txt
-                  test -s deployment-preflight/migration-history.normalized.txt
-                  cmp --silent deployment-preflight/local-migrations.txt \
-                      deployment-preflight/parsed-local-migrations.txt
-                  supabase db push --remote="$SUPABASE_PROJECT_REF" --dry-run --yes \
-                      > deployment-preflight/migration-plan.txt 2>&1
+                  if [ ! -s deployment-preflight/local-migrations.txt ]; then
+                      fail_preflight "No local migration files were parsed."
+                  fi
+                  if [ ! -s deployment-preflight/migration-history.normalized.txt ]; then
+                      fail_preflight "No remote migration history rows were parsed."
+                  fi
+                  if ! cmp --silent deployment-preflight/local-migrations.txt \
+                      deployment-preflight/parsed-local-migrations.txt; then
+                      diff -u deployment-preflight/local-migrations.txt \
+                          deployment-preflight/parsed-local-migrations.txt \
+                          > deployment-preflight/migration-history.diff || true
+                      fail_preflight "Normalized migration history does not match local migration files."
+                  fi
+                  if ! supabase db push --remote="$SUPABASE_PROJECT_REF" --dry-run --yes \
+                      > deployment-preflight/migration-plan.txt 2>&1; then
+                      fail_preflight "Supabase dry-run failed."
+                  fi
                   while IFS= read -r version; do
                       if grep -Fq "$version" deployment-preflight/migration-plan.txt; then
                           echo "$version"
@@ -107,16 +140,85 @@ jobs:
                   done < deployment-preflight/local-migrations.txt | sort -u \
                       > deployment-preflight/migration-plan.normalized.txt
                   if [ -s deployment-preflight/pending-migrations.txt ]; then
-                      test -s deployment-preflight/migration-plan.normalized.txt
+                      if [ ! -s deployment-preflight/migration-plan.normalized.txt ]; then
+                          fail_preflight "Dry-run did not report the pending migration set."
+                      fi
                   fi
-                  cmp --silent deployment-preflight/pending-migrations.txt \
-                      deployment-preflight/migration-plan.normalized.txt
+                  if ! cmp --silent deployment-preflight/pending-migrations.txt \
+                      deployment-preflight/migration-plan.normalized.txt; then
+                      diff -u deployment-preflight/pending-migrations.txt \
+                          deployment-preflight/migration-plan.normalized.txt \
+                          > deployment-preflight/migration-plan.diff || true
+                      fail_preflight "Dry-run migration plan does not match the pending migration set."
+                  fi
+
+            - name: Sanitize migration preflight diagnostics
+              id: sanitize_migration_preflight
+              if: ${{ always() }}
+              run: |
+                  python3 - <<'PY'
+                  import os
+                  import re
+                  import shutil
+                  from pathlib import Path
+
+                  source = Path("deployment-preflight")
+                  destination = Path("deployment-preflight-sanitized")
+                  if destination.exists():
+                      shutil.rmtree(destination)
+                  destination.mkdir()
+
+                  secrets = {
+                      value
+                      for name, value in os.environ.items()
+                      if value
+                      and any(
+                          marker in name
+                          for marker in ("TOKEN", "PASSWORD", "SECRET", "DATABASE_URL")
+                      )
+                  }
+                  patterns = (
+                      (re.compile(r"(?i)(authorization:\\s*bearer\\s+)\\S+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?i)(postgres(?:ql)?://)[^\\s'\\\"]+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?i)([?&](?:password|token|secret|apikey|api_key)=)[^&\\s]+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?i)([\\\"']?(?:password|token|secret|apikey|api_key|access_token|refresh_token)[\\\"']?\\s*[:=]\\s*[\\\"']?)[^\\s,;\\\"'}]+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"), "[REDACTED_JWT]"),
+                  )
+
+                  def sanitize(text):
+                      for secret in secrets:
+                          text = text.replace(secret, "[REDACTED]")
+                      for pattern, replacement in patterns:
+                          text = pattern.sub(replacement, text)
+                      return text
+
+                  if source.is_dir():
+                      for path in source.rglob("*"):
+                          if path.is_file():
+                              relative_path = path.relative_to(source)
+                              target_path = destination / relative_path
+                              target_path.parent.mkdir(parents=True, exist_ok=True)
+                              target_path.write_text(
+                                  sanitize(path.read_text(encoding="utf-8", errors="replace")),
+                                  encoding="utf-8",
+                              )
+                  else:
+                      (destination / "diagnostics.txt").write_text(
+                          "Preflight did not create diagnostics before failing.\n",
+                          encoding="utf-8",
+                      )
+                  (destination / "sanitization-status.txt").write_text(
+                      "Diagnostics were sanitized before upload.\n",
+                      encoding="utf-8",
+                  )
+                  PY
 
             - name: Upload migration preflight
+              if: ${{ always() && steps.sanitize_migration_preflight.outcome == 'success' }}
               uses: actions/upload-artifact@v4
               with:
                   name: supabase-development-migration-preflight
-                  path: deployment-preflight
+                  path: deployment-preflight-sanitized
                   retention-days: 30
 
     deploy-and-build:
@@ -166,10 +268,21 @@ jobs:
 
             - name: Revalidate Development target and migration plan
               run: |
-                  test -n "$SUPABASE_PROJECT_REF"
-                  test -n "$SUPABASE_EXPECTED_PROJECT_REF"
-                  test "$SUPABASE_PROJECT_REF" = "$SUPABASE_EXPECTED_PROJECT_REF"
+                  set -Euo pipefail
                   mkdir -p deployment-preflight-recheck
+                  trap 'echo "Failure: revalidation command failed at line $LINENO." >> deployment-preflight-recheck/diagnostics.txt; echo "::error::Development revalidation failed. See the recheck preflight artifact."' ERR
+                  if [ -z "$SUPABASE_PROJECT_REF" ]; then
+                      echo "::error::SUPABASE_DEV_PROJECT_REF is not configured."
+                      exit 1
+                  fi
+                  if [ -z "$SUPABASE_EXPECTED_PROJECT_REF" ]; then
+                      echo "::error::SUPABASE_EXPECTED_PROJECT_REF is not configured."
+                      exit 1
+                  fi
+                  if [ "$SUPABASE_PROJECT_REF" != "$SUPABASE_EXPECTED_PROJECT_REF" ]; then
+                      echo "::error::Development target does not match the approved project ref."
+                      exit 1
+                  fi
                   supabase migration list --remote="$SUPABASE_PROJECT_REF" \
                       > deployment-preflight-recheck/migration-history.txt 2>&1
                   find supabase/migrations -maxdepth 1 -type f -name '*.sql' \
@@ -231,6 +344,75 @@ jobs:
                       deployment-preflight-recheck/migration-history.normalized.txt
                   cmp --silent deployment-preflight/migration-plan.normalized.txt \
                       deployment-preflight-recheck/migration-plan.normalized.txt
+
+            - name: Sanitize recheck preflight diagnostics
+              id: sanitize_recheck_preflight
+              if: ${{ always() }}
+              run: |
+                  python3 - <<'PY'
+                  import os
+                  import re
+                  import shutil
+                  from pathlib import Path
+
+                  source = Path("deployment-preflight-recheck")
+                  destination = Path("deployment-preflight-recheck-sanitized")
+                  if destination.exists():
+                      shutil.rmtree(destination)
+                  destination.mkdir()
+
+                  secrets = {
+                      value
+                      for name, value in os.environ.items()
+                      if value
+                      and any(
+                          marker in name
+                          for marker in ("TOKEN", "PASSWORD", "SECRET", "DATABASE_URL")
+                      )
+                  }
+                  patterns = (
+                      (re.compile(r"(?i)(authorization:\\s*bearer\\s+)\\S+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?i)(postgres(?:ql)?://)[^\\s'\\\"]+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?i)([?&](?:password|token|secret|apikey|api_key)=)[^&\\s]+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?i)([\\\"']?(?:password|token|secret|apikey|api_key|access_token|refresh_token)[\\\"']?\\s*[:=]\\s*[\\\"']?)[^\\s,;\\\"'}]+"), r"\\1[REDACTED]"),
+                      (re.compile(r"(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"), "[REDACTED_JWT]"),
+                  )
+
+                  def sanitize(text):
+                      for secret in secrets:
+                          text = text.replace(secret, "[REDACTED]")
+                      for pattern, replacement in patterns:
+                          text = pattern.sub(replacement, text)
+                      return text
+
+                  if source.is_dir():
+                      for path in source.rglob("*"):
+                          if path.is_file():
+                              relative_path = path.relative_to(source)
+                              target_path = destination / relative_path
+                              target_path.parent.mkdir(parents=True, exist_ok=True)
+                              target_path.write_text(
+                                  sanitize(path.read_text(encoding="utf-8", errors="replace")),
+                                  encoding="utf-8",
+                              )
+                  else:
+                      (destination / "diagnostics.txt").write_text(
+                          "Recheck did not create diagnostics before failing.\n",
+                          encoding="utf-8",
+                      )
+                  (destination / "sanitization-status.txt").write_text(
+                      "Diagnostics were sanitized before upload.\n",
+                      encoding="utf-8",
+                  )
+                  PY
+
+            - name: Upload recheck migration preflight
+              if: ${{ always() && steps.sanitize_recheck_preflight.outcome == 'success' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: supabase-development-migration-preflight-recheck
+                  path: deployment-preflight-recheck-sanitized
+                  retention-days: 30
 
             - name: Push migrations to Development
               run: supabase db push --remote="$SUPABASE_PROJECT_REF" --yes
