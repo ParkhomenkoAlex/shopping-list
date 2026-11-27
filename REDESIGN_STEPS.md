@@ -198,11 +198,22 @@ but never override the approved prototype.
   completed Development regression.
 - Production deployment, CI-generated APK Sentry delivery/source maps, and
   manual CI/ruleset execution on master.
-- Both Cloud Safety hotfix PRs are merged. A Development backup was created on
-  2026-11-27, but an isolated restore test is blocked by an incompatible managed
-  Auth schema in the tested Local Supabase image. Cloud deployment and removal
-  of older credentials remain deferred pending a compatible restore verification
-  and owner approval.
+- Both Cloud Safety hotfix PRs are merged. The Development backup created on
+  2026-11-27 passed an isolated restore verification with Postgres 17.6.1.166
+  and GoTrue v2.199.0. The Auth compatibility blocker is resolved: all 30
+  non-Storage COPY targets and their row counts matched, including Auth users,
+  identities and sessions, lists, items, memberships and push tokens; the 15-row
+  migration history, referential integrity, four RLS-enabled tables and 15
+  public policies were verified. An isolated Auth sign-up/sign-in smoke test
+  passed and its synthetic user was removed. All nine Storage COPY blocks were
+  empty and source has no Supabase Storage calls, so only those blocks were
+  excluded from a temporary copy of the dump; the original dump was unchanged.
+  The temporary stack was removed after verification. This does not validate
+  existing session tokens under a different temporary JWT secret or restored-user
+  password sign-in without separately supplied plaintext credentials. It is not
+  a generic Storage recovery procedure: non-empty Storage metadata or objects
+  require compatible Storage recovery. Cloud deployment and removal of older
+  credentials remain deferred pending owner approval and existing safeguards.
 - R6 device verification still needs initial and background error-state coverage.
   Owned lists that are shared with others have no indicator until an authorized
   collaborator aggregate is added to the R5 contract. PNG optimization remains

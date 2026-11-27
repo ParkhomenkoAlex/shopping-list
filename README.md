@@ -127,11 +127,28 @@ same Environment also protects the read-only plan job because it supplies the
 environment-scoped credentials, so reviewers approve twice by design: first to
 generate the preflight artifact, then to deploy the unchanged normalized plan.
 
-Both Cloud Safety hotfix PRs are merged. A Development backup was created on
-2026-11-27, but an isolated restore test is blocked because its managed Auth
-schema includes columns unavailable in the tested Local Supabase image. Cloud
-deployment and removal of older credentials remain deferred until a compatible
-restore is verified and owner approval is given.
+Both Cloud Safety hotfix PRs are merged. The Development backup created on
+2026-11-27 passed an isolated restore verification using Postgres 17.6.1.166
+and GoTrue v2.199.0. The Auth compatibility blocker is resolved: the image
+includes `client_auth_method` and `client_assertion_audience`, required by the
+backup's custom OAuth provider table. The verification restored and matched all
+non-Storage COPY data, migration history, public RLS metadata and isolation,
+and an isolated Auth sign-up/sign-in smoke test.
+
+For the verified backup, all Storage COPY blocks were empty and the application
+has no Supabase Storage calls. The isolated procedure therefore creates a
+separate Docker stack, validates every required COPY column, restores roles and
+schema, imports a temporary copy of `data.sql` with only those empty Storage
+blocks removed, imports migration history, verifies row counts/references/RLS,
+then removes the entire temporary stack. Never alter the original dump. This is
+not a generic Storage recovery procedure: a backup with Storage metadata or
+objects requires a compatible Storage service and separate object recovery.
+Existing Auth session rows are preserved, but previously issued tokens are not
+validated in an isolated stack with a different JWT secret; restored-user
+password sign-in also requires separately supplied plaintext test credentials.
+
+Cloud deployment and removal of older credentials remain deferred pending owner
+approval and the existing target, history, backup and recovery-plan safeguards.
 
 The authenticated client registers an Expo push token after permission approval.
 `notify-list-members` sends notifications, and a notification tap routes to
