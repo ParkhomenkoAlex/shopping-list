@@ -103,11 +103,29 @@ non-monitoring build.
 `Supabase Development` and `Supabase Production` are manual
 `workflow_dispatch` workflows. They deploy migrations and Edge Functions, then
 build/upload the matching APK. Pull requests, pushes and merges never deploy.
+They only accept `develop` and `master` respectively, require a current-backup
+and recovery-plan confirmation, serialize deployments per environment, and stop
+when the remote migration history or dry-run plan changes between review and
+apply.
 
-Required GitHub secrets include target-specific Supabase URL, publishable key and
-project ref values, `SUPABASE_ACCESS_TOKEN`, `SENTRY_AUTH_TOKEN`, and
-`EXPO_PUBLIC_SENTRY_DEV_DSN` / `EXPO_PUBLIC_SENTRY_PROD_DSN`. Do not print or
-commit their values.
+Before enabling either workflow, create GitHub Environments named
+`development` and `production`. Configure required reviewers for both, with a
+separate Production approver, then scope these secrets to the matching
+Environment: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DEV_PROJECT_REF` or
+`SUPABASE_PROD_PROJECT_REF`, the matching `EXPO_PUBLIC_SUPABASE_*` values,
+`SENTRY_AUTH_TOKEN`, and the matching Sentry DSN. Add the non-secret
+Environment variable `SUPABASE_EXPECTED_PROJECT_REF` with the same project ref
+as that Environment's project-ref secret. The workflows stop if those values do
+not match. Do not print or commit their values.
+
+Before dispatch, manually verify the target project, remote migration history,
+SQL changes, and a current recoverable backup. For Production, verify the
+recovery plan and restore procedure as well. Inspect the uploaded migration
+preflight artifact before approving the deploy job. GitHub Environment approval
+is required before the deployment job can use `--yes` to apply migrations. The
+same Environment also protects the read-only plan job because it supplies the
+environment-scoped credentials, so reviewers approve twice by design: first to
+generate the preflight artifact, then to deploy the unchanged normalized plan.
 
 The authenticated client registers an Expo push token after permission approval.
 `notify-list-members` sends notifications, and a notification tap routes to
