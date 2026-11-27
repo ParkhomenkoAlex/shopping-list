@@ -4,10 +4,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Illustration } from '@/components/ui/Illustration';
 import { semanticColors } from '@/theme/semantic';
 import { elevation, radii, spacing, typography } from '@/theme/tokens';
-import type { List } from '@/types/List';
+import type { ListSummary } from '@/types/List';
 
 type ListCardProps = {
-    list: List;
+    list: ListSummary;
     onPress: () => void;
 };
 

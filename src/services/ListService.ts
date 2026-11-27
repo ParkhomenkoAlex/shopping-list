@@ -3,15 +3,12 @@ import * as Crypto from 'expo-crypto';
 import { supabase } from '@/lib/SupabaseClient';
 
 import type { Database } from '@/types/database/database.types';
-import type { List } from '@/types/List';
+import type { List, ListSummary } from '@/types/List';
 
 export type ListUpdate = Database['public']['Tables']['lists']['Update'];
 
-export async function getLists(): Promise<List[]> {
-    const { data, error } = await supabase
-        .from('lists')
-        .select('*')
-        .order('created_at', { ascending: true });
+export async function getLists(): Promise<ListSummary[]> {
+    const { data, error } = await supabase.rpc('get_accessible_list_summaries');
 
     if (error) {
         throw error;

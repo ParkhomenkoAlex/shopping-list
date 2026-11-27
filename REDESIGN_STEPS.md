@@ -101,26 +101,30 @@ notification delivery without evidence.
       storage only and defaults to Cozy. The authentication illustration remains
       unchanged. Category and greeting art is not yet available and therefore
       uses the common fallback. Final visual owner review remains required.
-- [ ] **R5 List appearance and statistics data layer:** audit confirms that
-      `getLists()` returns only `id`, `name`, `description`, timestamps; it has
-      no `owner_id`, appearance fields or aggregate item statistics. Membership
-      roles exist in `list_members`; a single current-user membership query now
-      supports All/Mine/Shared without N+1, but items are fetched per list only
-      in List Details, so counts would be N+1. RLS limits lists/items/members to
-      authorized members; realtime invalidates list and membership queries,
-      while React Query retains cached data during refetch. Next step after
-      approval: add stable
-      `icon_key`/`color_key` with defaults and CHECK constraints, backfill,
-      regenerate types, then introduce a security-invoker authorized aggregate
-      RPC returning each accessible list's owner id, membership role, item count
-      and completed-item count in one call. Verify RLS isolation, no N+1 reads,
-      realtime/cache invalidation for list, item and membership changes, and
-      offline/reconnect, Development deployment and list CRUD after explicit
-      approval before data/API and UI commits.
+- [ ] **R5 List appearance and statistics data layer — implementation pending
+      owner review:** migration `20261127120000` persists `icon_key` and
+      `color_key` with groceries/indigo defaults and CHECK constraints for the
+      stable catalogs, including existing lists. Regenerated types expose both
+      fields. `get_accessible_list_summaries()` is a security-invoker aggregate
+      RPC returning only authorized lists with owner id, current membership role,
+      item count and completed-item count in one query. My Lists now uses this
+      RPC for All/Mine/Shared and no longer runs a separate membership query.
+      Item and membership triggers touch `lists.updated_at`; list and membership
+      realtime events invalidate the summary cache. `CreateList` reuses the
+      parent mutation, removing its duplicate summary observer. Local database
+      migration history and 88 SQL/RLS assertions pass. An isolated
+      non-destructive upgrade test applied R5 to pre-R5 fixture data and
+      confirmed preservation of auth users, credentials, identities, sessions,
+      lists, items, memberships, push tokens, relations, and legacy list
+      reads, as well as defaults and RPC/RLS isolation. Local R5 regression
+      passed 11/11 cases on Pixel 8 and Pixel 9, covering CRUD, realtime,
+      offline, and reconnect behavior. Development deployment remains pending;
+      owner review remains required before completion. Keep data/API and UI
+      commits separate.
 - [ ] **R6 Main screen — partial first visual slice:** implemented dynamic
       greeting, account popup with temporary Clean/Cozy selector and existing
       logout, circular New list action, All/Mine/Shared filters backed by one
-      membership query, friendly fallback cards, and illustrated
+      authorized aggregate summary query, friendly fallback cards, and illustrated
       no-lists/no-shared-lists/error/offline states. Progress banner remains
       deferred until R5 provides authorized statistics data. Preserve existing
       navigation guards and functionality. Pixel 8 manual review recorded 19

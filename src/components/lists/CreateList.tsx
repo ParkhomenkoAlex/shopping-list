@@ -3,7 +3,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { CreateListModal } from '@/components/lists/CreateListModal';
-import { useList } from '@/hooks/useList';
 import type { CreateListForm } from '@/types/CreateListForm';
 import { semanticColors } from '@/theme/semantic';
 import { elevation, spacing } from '@/theme/tokens';
@@ -13,9 +12,20 @@ const initialForm: CreateListForm = {
     description: '',
 };
 
-export function CreateList() {
-    const { isCreating, createError, createList } = useList();
+type CreateListProps = {
+    createList: (values: {
+        name: string;
+        description: string | null;
+    }) => Promise<unknown>;
+    isCreating: boolean;
+    createError: Error | null;
+};
 
+export function CreateList({
+    createList,
+    isCreating,
+    createError,
+}: CreateListProps) {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form, setForm] = useState<CreateListForm>(initialForm);
 

@@ -63,11 +63,12 @@ Clean/Cozy selection is persisted only locally through Expo SQLite
 effect and can be removed once one approved style is selected. Prototype SVGs
 remain placeholders and must not be shipped as the final asset set.
 
-src/theme/listAppearance.ts already owns a presentation-only eight-icon Ionicons
-catalog and eight semantic colors: indigo, blue, green, teal, purple, pink,
-amber, gray. groceries and indigo remain safe fallbacks for unknown or legacy
-values. Future persistence stores only stable keys, never image paths or
-arbitrary colors. Illustration choice and color choice are independent.
+src/theme/listAppearance.ts owns the eight stable icon keys and eight semantic
+colors: indigo, blue, green, teal, purple, pink, amber, gray. `icon_key` and
+`color_key` are persisted with groceries/indigo defaults and database CHECK
+constraints; image paths and arbitrary colors are never persisted. Groceries
+and indigo remain safe client fallbacks for unknown or legacy values.
+Illustration choice and color choice are independent.
 
 ## Component conventions
 

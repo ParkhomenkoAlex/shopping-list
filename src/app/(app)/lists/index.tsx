@@ -25,10 +25,9 @@ export default function ListsScreen() {
         isListsLoading,
         listsError,
         refetchLists,
-        listMemberships,
-        hasListMembershipsData,
-        listMembershipsError,
-        refetchListMemberships,
+        createList,
+        isCreating,
+        createError,
     } = useList();
     const { signOut, user } = useAuth();
     const [isAccountMenuVisible, setIsAccountMenuVisible] = useState(false);
@@ -46,30 +45,15 @@ export default function ListsScreen() {
     const isInitialLoading = isListsLoading && !hasListsData;
     const hasInitialError = Boolean(listsError) && !hasListsData;
     const hasRefreshError = Boolean(listsError) && hasListsData;
-    const isFiltersAvailable = hasListMembershipsData;
-    const isMembershipFilterUnavailable =
-        selectedListFilter !== 'all' && !hasListMembershipsData;
     const visibleLists = useMemo(() => {
         if (selectedListFilter === 'all') {
             return lists;
         }
 
-        if (!hasListMembershipsData) {
-            return [];
-        }
-
-        const membershipRoles = new Map(
-            listMemberships.map((membership) => [
-                membership.list_id,
-                membership.role,
-            ])
-        );
         const expectedRole = selectedListFilter === 'mine' ? 'owner' : 'member';
 
-        return lists.filter(
-            (list) => membershipRoles.get(list.id) === expectedRole
-        );
-    }, [hasListMembershipsData, listMemberships, lists, selectedListFilter]);
+        return lists.filter((list) => list.membership_role === expectedRole);
+    }, [lists, selectedListFilter]);
 
     useFocusEffect(
         useCallback(() => {
@@ -169,37 +153,17 @@ export default function ListsScreen() {
                 </View>
             )}
 
-            {listMembershipsError && (
-                <View
-                    accessibilityLiveRegion="polite"
-                    style={styles.membershipError}
-                >
-                    <Text style={styles.refreshErrorText}>
-                        {hasListMembershipsData
-                            ? "Couldn't refresh list access. Showing last available filters."
-                            : "Couldn't load list access. Mine and Shared are unavailable."}
-                    </Text>
-                    <Text
-                        accessibilityRole="button"
-                        onPress={() => void refetchListMemberships()}
-                        style={styles.refreshRetry}
-                    >
-                        Try again
-                    </Text>
-                </View>
-            )}
-
-            {isFiltersAvailable ? (
-                <View style={styles.listActions}>
-                    <ListFilters
-                        selectedFilter={selectedListFilter}
-                        onSelect={setSelectedListFilter}
-                    />
-                    <CreateList />
-                </View>
-            ) : (
-                <CreateList />
-            )}
+            <View style={styles.listActions}>
+                <ListFilters
+                    selectedFilter={selectedListFilter}
+                    onSelect={setSelectedListFilter}
+                />
+                <CreateList
+                    createError={createError}
+                    createList={createList}
+                    isCreating={isCreating}
+                />
+            </View>
 
             {hasListsData && visibleLists.length > 0 && (
                 <View>
@@ -216,8 +180,7 @@ export default function ListsScreen() {
             {hasListsData &&
                 visibleLists.length === 0 &&
                 !listsError &&
-                !isOffline &&
-                !isMembershipFilterUnavailable && (
+                !isOffline && (
                     <ListsStatePanel
                         description={
                             selectedListFilter === 'shared'
@@ -269,12 +232,6 @@ const styles = StyleSheet.create({
         minHeight: 180,
     },
     refreshError: {
-        borderRadius: radii.control,
-        backgroundColor: semanticColors.feedback.warningSurface,
-        marginBottom: spacing.md,
-        padding: spacing.sm,
-    },
-    membershipError: {
         borderRadius: radii.control,
         backgroundColor: semanticColors.feedback.warningSurface,
         marginBottom: spacing.md,

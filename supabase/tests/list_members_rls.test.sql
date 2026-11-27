@@ -642,6 +642,11 @@ select is(
     ),
     jsonb_build_array(
         jsonb_build_object(
+            'user_id', '11111111-1111-1111-1111-111111111111'::uuid,
+            'email', 'owner@example.test',
+            'role', 'owner'
+        ),
+        jsonb_build_object(
             'user_id', '22222222-2222-2222-2222-222222222222'::uuid,
             'email', 'member@example.test',
             'role', 'member'
@@ -652,7 +657,7 @@ select is(
             'role', 'member'
         )
     ),
-    'owner can view shared members without seeing the owner'
+    'owner can view all list members including the owner'
 );
 
 reset role;
@@ -670,8 +675,8 @@ select is(
             'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
         )
     ),
-    2::bigint,
-    'member can view shared members'
+    3::bigint,
+    'member can view all list members'
 );
 
 select throws_ok(
