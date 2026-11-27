@@ -2,18 +2,132 @@ name: Supabase Development
 
 'on':
     workflow_dispatch:
+        inputs:
+            backup_recovery_confirmed:
+                description: Confirm that a current recoverable Development backup and recovery plan were reviewed
+                required: true
+                type: boolean
 
-# To enable automatic builds on every push to develop:
-# Uncomment the "push" block below.
-# Keep "workflow_dispatch" to allow manual runs.
-#
-# push:
-#   branches:
-#     - develop
+concurrency:
+    group: supabase-development-deployment
+    cancel-in-progress: false
+
+permissions:
+    contents: read
 
 jobs:
-    migrate-and-build:
+    validate-dispatch:
         runs-on: ubuntu-latest
+
+        steps:
+            - name: Require the develop branch
+              run: test "$GITHUB_REF" = "refs/heads/develop"
+
+            - name: Require backup and recovery confirmation
+              run: test "${{ inputs.backup_recovery_confirmed }}" = "true"
+
+    plan:
+        needs: validate-dispatch
+        runs-on: ubuntu-latest
+        environment:
+            name: development
+        env:
+            SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
+            SUPABASE_EXPECTED_PROJECT_REF: ${{ vars.SUPABASE_EXPECTED_PROJECT_REF }}
+            SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Supabase CLI
+              uses: supabase/setup-cli@v1
+              with:
+                  version: 3.3.0
+
+            - name: Validate Development target
+              run: |
+                  test -n "$SUPABASE_PROJECT_REF"
+                  test -n "$SUPABASE_EXPECTED_PROJECT_REF"
+                  test "$SUPABASE_PROJECT_REF" = "$SUPABASE_EXPECTED_PROJECT_REF"
+
+            - name: Record migration history and dry-run plan
+              run: |
+                  mkdir -p deployment-preflight
+                  supabase migration list --remote="$SUPABASE_PROJECT_REF" \
+                      > deployment-preflight/migration-history.txt 2>&1
+                  find supabase/migrations -maxdepth 1 -type f -name '*.sql' \
+                      -printf '%f\n' | sed -n 's/^\([0-9]\{14\}\)_.*/\1/p' | sort -u \
+                      > deployment-preflight/local-migrations.txt
+                  awk -F '[│|]' '
+                      function version(value) {
+                          gsub(/[^0-9]/, "", value)
+                          return value
+                      }
+                      index($0, "│") || index($0, "|") {
+                          local_version = version($1)
+                          remote_version = version($2)
+                          if (local_version == "" && remote_version == "") next
+                          if (local_version == "") {
+                              print "Remote-only migration: " $0 > "/dev/stderr"
+                              invalid = 1
+                              next
+                          }
+                          if (remote_version == "") {
+                              pending = 1
+                              print "pending " local_version
+                              next
+                          }
+                          if (local_version != remote_version || pending) {
+                              print "Migration history mismatch: " $0 > "/dev/stderr"
+                              invalid = 1
+                              next
+                          }
+                          print "applied " local_version
+                      }
+                      END { exit invalid }
+                  ' deployment-preflight/migration-history.txt \
+                      > deployment-preflight/migration-history.normalized.txt
+                  sed -n 's/^pending //p' \
+                      deployment-preflight/migration-history.normalized.txt \
+                      > deployment-preflight/pending-migrations.txt
+                  sed -n 's/^[a-z]* //p' \
+                      deployment-preflight/migration-history.normalized.txt \
+                      > deployment-preflight/parsed-local-migrations.txt
+                  test -s deployment-preflight/local-migrations.txt
+                  test -s deployment-preflight/migration-history.normalized.txt
+                  cmp --silent deployment-preflight/local-migrations.txt \
+                      deployment-preflight/parsed-local-migrations.txt
+                  supabase db push --remote="$SUPABASE_PROJECT_REF" --dry-run --yes \
+                      > deployment-preflight/migration-plan.txt 2>&1
+                  while IFS= read -r version; do
+                      if grep -Fq "$version" deployment-preflight/migration-plan.txt; then
+                          echo "$version"
+                      fi
+                  done < deployment-preflight/local-migrations.txt | sort -u \
+                      > deployment-preflight/migration-plan.normalized.txt
+                  if [ -s deployment-preflight/pending-migrations.txt ]; then
+                      test -s deployment-preflight/migration-plan.normalized.txt
+                  fi
+                  cmp --silent deployment-preflight/pending-migrations.txt \
+                      deployment-preflight/migration-plan.normalized.txt
+
+            - name: Upload migration preflight
+              uses: actions/upload-artifact@v4
+              with:
+                  name: supabase-development-migration-preflight
+                  path: deployment-preflight
+                  retention-days: 30
+
+    deploy-and-build:
+        needs: plan
+        runs-on: ubuntu-latest
+        environment:
+            name: development
+        env:
+            SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
+            SUPABASE_EXPECTED_PROJECT_REF: ${{ vars.SUPABASE_EXPECTED_PROJECT_REF }}
+            SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
         steps:
             - name: Checkout
@@ -36,12 +150,84 @@ jobs:
             - name: Setup Supabase CLI
               uses: supabase/setup-cli@v1
               with:
-                  version: latest
+                  version: 3.3.0
+
+            - name: Download approved migration preflight
+              uses: actions/download-artifact@v4
+              with:
+                  name: supabase-development-migration-preflight
+                  path: deployment-preflight
+
+            - name: Revalidate Development target and migration plan
+              run: |
+                  test -n "$SUPABASE_PROJECT_REF"
+                  test -n "$SUPABASE_EXPECTED_PROJECT_REF"
+                  test "$SUPABASE_PROJECT_REF" = "$SUPABASE_EXPECTED_PROJECT_REF"
+                  mkdir -p deployment-preflight-recheck
+                  supabase migration list --remote="$SUPABASE_PROJECT_REF" \
+                      > deployment-preflight-recheck/migration-history.txt 2>&1
+                  find supabase/migrations -maxdepth 1 -type f -name '*.sql' \
+                      -printf '%f\n' | sed -n 's/^\([0-9]\{14\}\)_.*/\1/p' | sort -u \
+                      > deployment-preflight-recheck/local-migrations.txt
+                  awk -F '[│|]' '
+                      function version(value) {
+                          gsub(/[^0-9]/, "", value)
+                          return value
+                      }
+                      index($0, "│") || index($0, "|") {
+                          local_version = version($1)
+                          remote_version = version($2)
+                          if (local_version == "" && remote_version == "") next
+                          if (local_version == "") {
+                              print "Remote-only migration: " $0 > "/dev/stderr"
+                              invalid = 1
+                              next
+                          }
+                          if (remote_version == "") {
+                              pending = 1
+                              print "pending " local_version
+                              next
+                          }
+                          if (local_version != remote_version || pending) {
+                              print "Migration history mismatch: " $0 > "/dev/stderr"
+                              invalid = 1
+                              next
+                          }
+                          print "applied " local_version
+                      }
+                      END { exit invalid }
+                  ' deployment-preflight-recheck/migration-history.txt \
+                      > deployment-preflight-recheck/migration-history.normalized.txt
+                  sed -n 's/^pending //p' \
+                      deployment-preflight-recheck/migration-history.normalized.txt \
+                      > deployment-preflight-recheck/pending-migrations.txt
+                  sed -n 's/^[a-z]* //p' \
+                      deployment-preflight-recheck/migration-history.normalized.txt \
+                      > deployment-preflight-recheck/parsed-local-migrations.txt
+                  test -s deployment-preflight-recheck/local-migrations.txt
+                  test -s deployment-preflight-recheck/migration-history.normalized.txt
+                  cmp --silent deployment-preflight-recheck/local-migrations.txt \
+                      deployment-preflight-recheck/parsed-local-migrations.txt
+                  supabase db push --remote="$SUPABASE_PROJECT_REF" --dry-run --yes \
+                      > deployment-preflight-recheck/migration-plan.txt 2>&1
+                  while IFS= read -r version; do
+                      if grep -Fq "$version" deployment-preflight-recheck/migration-plan.txt; then
+                          echo "$version"
+                      fi
+                  done < deployment-preflight-recheck/local-migrations.txt | sort -u \
+                      > deployment-preflight-recheck/migration-plan.normalized.txt
+                  if [ -s deployment-preflight-recheck/pending-migrations.txt ]; then
+                      test -s deployment-preflight-recheck/migration-plan.normalized.txt
+                  fi
+                  cmp --silent deployment-preflight-recheck/pending-migrations.txt \
+                      deployment-preflight-recheck/migration-plan.normalized.txt
+                  cmp --silent deployment-preflight/migration-history.normalized.txt \
+                      deployment-preflight-recheck/migration-history.normalized.txt
+                  cmp --silent deployment-preflight/migration-plan.normalized.txt \
+                      deployment-preflight-recheck/migration-plan.normalized.txt
 
             - name: Push migrations to Development
-              run: supabase db push --project-ref ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
-              env:
-                  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+              run: supabase db push --remote="$SUPABASE_PROJECT_REF" --yes
 
             - name: Calculate build number
               run: |

@@ -1706,4 +1706,31 @@ Then create a Pull Request into `develop`.
 
 ---
 
-# 37. GitHub Acti
+# 37. GitHub Actions
+
+`Supabase Development` and `Supabase Production` are manual
+`workflow_dispatch` workflows. They deploy migrations, then build and upload the
+matching APK. Pull requests, pushes and merges never deploy.
+
+Both workflows accept only their matching branch (`develop` or `master`),
+require confirmation that a current recoverable backup and recovery plan were
+reviewed, serialize deployments per environment, and stop if the normalized
+remote migration history or dry-run migration plan changes before apply.
+
+Before enabling the workflows, create GitHub Environments named `development`
+and `production`. Configure the current single required reviewer for both.
+Scope these secrets to the matching Environment:
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DEV_PROJECT_REF` or
+`SUPABASE_PROD_PROJECT_REF`, and the matching `EXPO_PUBLIC_SUPABASE_*` values.
+Add the non-secret Environment variable `SUPABASE_EXPECTED_PROJECT_REF` with
+the same project ref as that Environment's project-ref secret. The workflows
+stop if the target values do not match. Do not print or commit secret values.
+
+Before dispatch, manually verify the target project, remote migration history,
+SQL changes, and a current recoverable backup. For Production, verify the
+recovery plan and restore procedure as well. Inspect the uploaded migration
+preflight artifact before approving the deploy job. GitHub Environment approval
+is required before the deployment job can use `--yes` to apply migrations. The
+same Environment also protects the read-only plan job because it supplies the
+environment-scoped credentials, so reviewers approve twice by design: first to
+generate the preflight artifact, then to deploy the unchanged normalized plan.
